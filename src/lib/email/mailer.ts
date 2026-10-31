@@ -82,7 +82,7 @@ export async function sendPriceAlertEmail(
   }
 
   const transporter = createTransport()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://farewatch.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://farewatch-gules.vercel.app'
   const pauseUrl = `${appUrl}/api/watches/${watch.id}/pause`
 
   const routeTitle = `${watch.origin_code} (${watch.origin_city}) → ${watch.destination_code} (${watch.destination_city})`

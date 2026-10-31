@@ -10,7 +10,7 @@
 ---
 
 ## 🌐 Live Demo & Repository
-- **Live Application:** [https://farewatch.vercel.app](https://farewatch.vercel.app)
+- **Live Application:** [https://farewatch-gules.vercel.app](https://farewatch-gules.vercel.app)
 - **GitHub Repository:** [https://github.com/khushi-ks1/farewatch](https://github.com/khushi-ks1/farewatch)
 
 ---
@@ -144,7 +144,7 @@ Create `.env.local` for local development. Only placeholders are in `.env.exampl
 | `GMAIL_APP_PASSWORD` | Google 16-character App Password | `abcd efgh ijkl mnop` |
 | `ADMIN_EMAILS` | Comma-separated admin emails | `admin@example.com,user@gmail.com` |
 | `CRON_SECRET` | Secret token protecting the check-prices API | `a-secure-32-char-random-secret` |
-| `NEXT_PUBLIC_APP_URL` | Base URL of deployed application | `https://farewatch.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | Base URL of deployed application | `https://farewatch-gules.vercel.app` |
 
 ---
 
@@ -211,7 +211,7 @@ If no `SERPAPI_API_KEY` is configured, FareWatch will seamlessly utilize its **M
 In your GitHub repository:
 1. Go to **Settings -> Secrets and variables -> Actions**.
 2. Add repository secrets:
-   - `APP_URL`: Your Vercel production URL (e.g., `https://farewatch.vercel.app`)
+   - `APP_URL`: Your Vercel production URL (e.g., `https://farewatch-gules.vercel.app`)
    - `CRON_SECRET`: Same value as configured in Vercel settings.
 3. The workflow in `.github/workflows/check-prices.yml` will automatically ping `/api/cron/check-prices` every 30 minutes!
 
