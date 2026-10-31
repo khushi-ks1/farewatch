@@ -56,7 +56,7 @@ export default function AdminPage() {
     try {
       setRunningJob(true)
       setJobResult(null)
-      const res = await fetch('/api/cron/check-prices', {
+      const res = await fetch('/api/admin/check-prices', {
         method: 'POST',
       })
       const data = await res.json()
