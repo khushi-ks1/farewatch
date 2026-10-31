@@ -5,12 +5,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from './ThemeProvider'
-import { Plane, Moon, Sun, Plus, ShieldCheck, LogOut } from 'lucide-react'
+import { Plane, SunMoon, Plus, ShieldCheck, LogOut } from 'lucide-react'
 
 export function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { theme, toggleTheme } = useTheme()
+  const { toggleTheme } = useTheme()
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const supabase = createClient()
@@ -116,10 +116,10 @@ export function Navbar() {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            aria-label="Toggle theme"
+            aria-label="Toggle color theme"
             className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+            <SunMoon className="h-4 w-4" />
           </button>
         </div>
       </div>

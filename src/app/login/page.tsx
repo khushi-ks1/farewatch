@@ -52,7 +52,7 @@ export default function LoginPage() {
             Welcome to FareWatch
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Sign in to track flight prices and receive instant deal alerts
+            Sign in to track flight prices and receive scheduled email alerts
           </p>
         </div>
 

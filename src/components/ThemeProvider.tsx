@@ -18,15 +18,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light')
 
   useEffect(() => {
-    const saved = localStorage.getItem('farewatch_theme') as Theme | null
-    if (saved) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount (avoids a hydration mismatch)
-      setTheme(saved)
-      document.documentElement.classList.toggle('dark', saved === 'dark')
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark')
-      document.documentElement.classList.add('dark')
-    }
+    const saved = localStorage.getItem('farewatch_theme')
+    const preferredTheme: Theme =
+      saved === 'light' || saved === 'dark'
+        ? saved
+        : window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+
+    document.documentElement.classList.toggle('dark', preferredTheme === 'dark')
+    setTheme(preferredTheme) // eslint-disable-line react-hooks/set-state-in-effect -- theme preference is only available after mount
   }, [])
 
   const toggleTheme = () => {

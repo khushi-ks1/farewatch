@@ -5,22 +5,22 @@ export default function LandingPage() {
   return (
     <div className="flex-1 flex flex-col">
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
+      <section className="hero-glow relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             {/* Left text */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-bold tracking-wide uppercase">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Automated Flight Tracker for India</span>
+                <span>Flight price tracking for India</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.1]">
-                Never overpay for flights in India again.
+                A smarter way to watch flight prices.
               </h1>
 
               <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
-                Save your route, pick your dates, and set your target fare. FareWatch scans Google Flights every 30 minutes and emails you the moment a matching deal drops.
+                Set your route, dates, and target fare. FareWatch checks available flight results on a schedule and emails you when a live fare matches.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
@@ -28,27 +28,27 @@ export default function LandingPage() {
                   href="/login"
                   className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-base shadow-lg shadow-sky-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  <span>Start Tracking Free</span>
+                  <span>Create a price alert</span>
                   <ArrowRight className="w-5 h-5" />
                 </Link>
 
                 <Link
-                  href="/dashboard"
+                  href="#how-it-works"
                   className="w-full sm:w-auto px-7 py-3.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-base transition-colors text-center"
                 >
-                  Go to Dashboard
+                  How it works
                 </Link>
               </div>
 
-              <div className="flex items-center justify-center lg:justify-start gap-6 pt-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-3 pt-4 text-xs font-medium text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-500" /> Free multi-user alerts
+                  <Check className="w-4 h-4 text-emerald-500" /> Private price watches
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-500" /> 0% spam guarantee
+                  <Check className="w-4 h-4 text-emerald-500" /> No repeat alerts at the same fare
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-500" /> Instant booking links
+                  <Check className="w-4 h-4 text-emerald-500" /> Google Flights search links
                 </span>
               </div>
             </div>
@@ -62,8 +62,8 @@ export default function LandingPage() {
                       <Plane className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-slate-900 dark:text-white">Example Alert</div>
-                      <div className="text-xs text-slate-400">Sample only &bull; not a live fare</div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white">Illustrative price alert</div>
+                      <div className="text-xs text-slate-400">Sample data &bull; not a live fare</div>
                     </div>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
@@ -96,7 +96,7 @@ export default function LandingPage() {
                       <span className="font-semibold text-slate-700 dark:text-slate-200">Below ₹4,000</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">Current Lowest:</span>
+                      <span className="text-slate-500 dark:text-slate-400">Example fare:</span>
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">₹2,890</span>
                         <span className="text-[10px] text-emerald-600 font-semibold">(-28%)</span>
@@ -116,7 +116,7 @@ export default function LandingPage() {
                     rel="noopener noreferrer"
                     className="block w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm text-center shadow-sm transition-colors"
                   >
-                    See real BLR &rarr; HYD fares on Google Flights
+                    Search BLR &rarr; HYD on Google Flights
                   </a>
                 </div>
               </div>
@@ -126,14 +126,14 @@ export default function LandingPage() {
       </section>
 
       {/* How it Works Section */}
-      <section className="py-20 bg-white dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800">
+      <section id="how-it-works" className="scroll-mt-24 py-20 bg-white dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               How FareWatch Works
             </h2>
             <p className="text-slate-600 dark:text-slate-400 mt-3 text-base">
-              Set it once and relax. We do the heavy lifting while you get alerted at the right moment.
+              Choose a route and target once. We handle scheduled checks and let you know when a live result fits.
             </p>
           </div>
 
@@ -164,7 +164,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white">3. Get Alerts & Book</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                FareWatch checks prices every 30 minutes. When a deal appears, you get a clean email with flight details, timings (IST), and a direct booking link.
+                Scheduled checks look for live fares that match your rule. Alert emails include flight details and a Google Flights link; verify the final fare before booking.
               </p>
             </div>
           </div>
@@ -178,13 +178,13 @@ export default function LandingPage() {
             <div className="space-y-5">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider">
                 <Zap className="w-3.5 h-3.5" />
-                <span>Zero Spam Guarantee</span>
+                <span>Thoughtful notifications</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                 Intelligent alerts that respect your inbox.
               </h2>
               <p className="text-slate-600 dark:text-slate-400 text-base leading-relaxed">
-                Other trackers spam your inbox every hour. FareWatch remembers what it sent you: we never alert you for the exact same flight at the same price twice. You only get notified again if the fare drops by 5% or more.
+                FareWatch remembers previous alerts for each flight and date. You won’t get the same alert twice at the same fare; we’ll notify you again when that fare drops by 5% or more.
               </p>
               <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
                 <li className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>One-click pause link directly from your email</span>
+                  <span>Pause a watch directly from your email</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
@@ -241,10 +241,10 @@ export default function LandingPage() {
       <section className="py-16 bg-gradient-to-r from-sky-600 to-indigo-700 text-white text-center">
         <div className="max-w-4xl mx-auto px-4 space-y-6">
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Ready to catch your next flight deal?
+            Ready to start watching a route?
           </h2>
           <p className="text-sky-100 text-lg max-w-xl mx-auto">
-            Join FareWatch today. Set up your first watch in less than 60 seconds.
+            Create a free watch and get an email when a live fare meets your target.
           </p>
           <div className="pt-2">
             <Link

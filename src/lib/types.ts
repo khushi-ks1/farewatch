@@ -25,6 +25,7 @@ export interface Watch {
   is_active: boolean
   last_checked_at: string | null
   current_lowest_price: number | null
+  current_price_is_mock: boolean
   created_at: string
   updated_at: string
 }

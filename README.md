@@ -1,6 +1,6 @@
 # FareWatch ✈️
 
-> Automated flight price alert web app for domestic routes across India with multi-user isolation, real-time Google Flights tracking, and zero-spam email alerts.
+> Scheduled flight price alerts for domestic routes across India, with private watch lists and clear separation between live and simulated results.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16%20App%20Router-black.svg)](https://nextjs.org)
@@ -17,7 +17,7 @@
 
 ## 🎯 Key Features
 
-- **Multi-User Isolation with RLS:** Every user authenticates securely via Google OAuth or Magic Link. Row-Level Security (RLS) ensures users only access their own flight watches.
+- **Multi-User Isolation with RLS:** Users authenticate with an email magic link. Row-Level Security (RLS) ensures users only access their own flight watches.
 - **5 Active Watches per User:** Generous allowance for upcoming business and leisure trips while preventing system abuse.
 - **Searchable Indian Airports:** Autocomplete coverage of 40+ commercial domestic airports across India (BLR, DEL, BOM, HYD, MAA, CCU, GOI, PNQ, etc.).
 - **Flexible Dates & Date Ranges:** Monitor a specific departure date or an entire flexible vacation window (e.g., Dec 1–15).
@@ -32,7 +32,7 @@
 - **Smart 60-Minute Search Cache:** If multiple users watch the same route and travel date, only one API call is executed and shared.
 - **Dual Flight Search Providers:**
   - **SerpApi Google Flights API:** Fetches live Indian domestic fares.
-  - **Built-in Mock Provider:** Generates realistic INR fares with real Indian airlines (IndiGo, Air India, Akasa Air, SpiceJet) when running without API keys or for local testing.
+  - **Built-in Mock Provider:** Generates clearly labeled simulated INR fares for local previews when running without an API key. Simulated fares are never sent as email alerts.
   - **Budget Pacing:** Automatically throttles and protects the 250 monthly free SerpApi quota.
 - **Visual Price History:** Interactive Recharts line graph with your target price line on the watch detail page.
 - **Admin Dashboard:** Access-controlled metrics for total users, active watches, monthly SerpApi consumption, and daily email sends (capped at 400/day).
@@ -54,12 +54,12 @@ flowchart TD
     Cache -->|Yes| Results[Cached Flight Deals]
     Cache -->|No| ProviderCheck{SerpApi Key & Quota?}
     ProviderCheck -->|Available| SerpApi[SerpApi Google Flights]
-    ProviderCheck -->|Exceeded / No Key| Mock[Realistic Mock Provider]
+    ProviderCheck -->|No Key: preview only| Mock[Simulated Mock Provider]
     
     SerpApi -->|Save cache & snapshots| Supabase
     Mock -->|Save cache & snapshots| Supabase
     
-    Results --> Dedup{Match rule & drops >= 5%?}
+    Results --> Dedup{Live result matches rule & drops >= 5%?}
     Dedup -->|Yes & under 400/day cap| Mailer[Nodemailer / Gmail SMTP]
     Dedup -->|No / Already alerted| Skip[Skip notification]
     
@@ -76,7 +76,7 @@ flowchart TD
 | **Styling & UI** | [Tailwind CSS](https://tailwindcss.com/) + [Lucide Icons](https://lucide.dev/) + Dark/Light Mode |
 | **Charts** | [Recharts](https://recharts.org/) |
 | **Database & Auth** | [Supabase](https://supabase.com/) (PostgreSQL + RLS + Auth + SQL Migrations) |
-| **Flight Search** | [SerpApi](https://serpapi.com/) Google Flights API (`engine=google_flights`, `gl=in`, `currency=INR`) + Deterministic Mock Provider |
+| **Flight Search** | [SerpApi](https://serpapi.com/) Google Flights API (`engine=google_flights`, `gl=in`, `currency=INR`) + labeled deterministic preview data |
 | **Email Transporter** | [Nodemailer](https://nodemailer.com/) (Gmail SMTP with Google App Password) |
 | **Deployment** | [Vercel](https://vercel.com/) |
 | **Scheduler** | [GitHub Actions](https://github.com/features/actions) (`*/30 * * * *`) |
@@ -139,7 +139,7 @@ Create `.env.local` for local development. Only placeholders are in `.env.exampl
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL | `https://xyzcompany.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Public Key | `eyJhbGci...` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key (Server only) | `eyJhbGci...` |
-| `SERPAPI_API_KEY` | SerpApi API key *(optional, falls back to Mock provider)* | `secret_serpapi_key` |
+| `SERPAPI_API_KEY` | SerpApi API key *(optional; without it, only simulated preview fares are available)* | `secret_serpapi_key` |
 | `GMAIL_USER` | Gmail address for sending alerts | `your-email@gmail.com` |
 | `GMAIL_APP_PASSWORD` | Google 16-character App Password | `abcd efgh ijkl mnop` |
 | `ADMIN_EMAILS` | Comma-separated admin emails | `admin@example.com,user@gmail.com` |
@@ -166,7 +166,7 @@ pnpm install
    supabase/migrations/20261031000000_initial_schema.sql
    ```
    Click **Run**. This creates the tables (`profiles`, `watches`, `price_snapshots`, `alerts`, `search_cache`, `usage`), enables Row Level Security (RLS), and configures triggers.
-3. In **Authentication -> Providers**, enable **Google** (or Email Magic Links). Add `http://localhost:3000/auth/callback` to the redirect URLs.
+3. In **Authentication -> Providers**, enable **Email**. Add `http://localhost:3000/auth/callback` to the allowed redirect URLs.
 
 ### 3. Configure `.env.local`
 
@@ -196,7 +196,7 @@ curl -X POST http://localhost:3000/api/cron/check-prices \
   -H "Content-Type: application/json"
 ```
 
-If no `SERPAPI_API_KEY` is configured, FareWatch will seamlessly utilize its **Mock Provider**, generating authentic domestic routes and IST flight schedules for immediate verification.
+If no `SERPAPI_API_KEY` is configured, FareWatch uses clearly labeled simulated data for local UI previews. Simulated fares are not bookable and will never trigger email alerts. Configure SerpApi to monitor live fares.
 
 ---
 

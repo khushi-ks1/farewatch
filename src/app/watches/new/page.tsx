@@ -121,6 +121,9 @@ export default function NewWatchPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Set route & target fare &bull; We will check prices automatically
             </p>
+            <p className="mt-2 max-w-lg text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              Checks run on a schedule. Simulated preview prices are clearly labeled and never sent as deal alerts.
+            </p>
           </div>
         </div>
 

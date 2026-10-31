@@ -40,6 +40,8 @@ export default function WatchDetailPage({
   const [snapshots, setSnapshots] = useState<PriceSnapshot[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const loadData = async () => {
     try {
@@ -68,34 +70,39 @@ export default function WatchDetailPage({
     if (!watch) return
     try {
       setActionLoading(true)
+      setMessage(null)
       const res = await fetch(`/api/watches/${watch.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !watch.is_active }),
       })
       const data = await res.json()
-      if (res.ok) {
-        setWatch(data.watch)
-      } else {
-        alert(data.error || 'Failed to update watch')
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update watch.')
       }
+      setWatch(data.watch)
+      setMessage({ type: 'success', text: watch.is_active ? 'Watch paused.' : 'Watch resumed.' })
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update watch.' })
     } finally {
       setActionLoading(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to permanently delete this flight watch?')) return
     try {
       setActionLoading(true)
+      setMessage(null)
       const res = await fetch(`/api/watches/${id}`, {
         method: 'DELETE',
       })
-      if (res.ok) {
-        router.push('/dashboard')
-      } else {
-        alert('Failed to delete watch')
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to delete watch.')
       }
+      router.push('/dashboard')
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete watch.' })
     } finally {
       setActionLoading(false)
     }
@@ -140,6 +147,7 @@ export default function WatchDetailPage({
   })
 
   const isDeal =
+    !watch.current_price_is_mock &&
     watch.current_lowest_price !== null &&
     (watch.rule_type === 'BELOW'
       ? watch.current_lowest_price <= watch.target_price
@@ -173,22 +181,89 @@ export default function WatchDetailPage({
           </button>
 
           <button
-            onClick={handleDelete}
+            onClick={() => setConfirmingDelete(true)}
             disabled={actionLoading}
             className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors"
             title="Delete Watch"
+            aria-label="Delete watch"
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
+      {message && (
+        <div
+          role={message.type === 'error' ? 'alert' : 'status'}
+          className={`rounded-xl border p-4 text-sm ${
+            message.type === 'error'
+              ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300'
+              : 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <span>{message.text}</span>
+            <button onClick={() => setMessage(null)} className="text-xs font-bold underline">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmingDelete && (
+        <div
+          role="alertdialog"
+          aria-labelledby="delete-watch-title"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30"
+        >
+          <div>
+            <h2 id="delete-watch-title" className="text-sm font-bold text-slate-900 dark:text-white">
+              Delete this watch?
+            </h2>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+              Its saved price history will also be removed.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setConfirmingDelete(false)}
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-white dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => void handleDelete()}
+              disabled={actionLoading}
+              className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              {actionLoading ? 'Deleting…' : 'Delete watch'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Watch Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+        {watch.current_price_is_mock && (
+          <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            <p className="font-bold">Simulated sample price — not a live fare</p>
+            <p className="mt-1 text-xs leading-relaxed">
+              This result is for preview only. Simulated fares never trigger email alerts. Configure a live fare provider to monitor bookable prices.
+            </p>
+          </div>
+        )}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              {watch.is_active ? (
+              {!watch.is_active ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
+                  Paused
+                </span>
+              ) : watch.current_price_is_mock ? (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
+                  Sample fare
+                </span>
+              ) : (
                 isDeal ? (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
                     <Sparkles className="w-3 h-3" /> Deal Found
@@ -198,10 +273,6 @@ export default function WatchDetailPage({
                     Above Target
                   </span>
                 )
-              ) : (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
-                  Paused
-                </span>
               )}
 
               {watch.is_non_stop_only && (
@@ -233,12 +304,12 @@ export default function WatchDetailPage({
           </div>
 
           <div className="text-left md:text-right p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
-            <div className="text-xs text-slate-400 font-medium">Current Lowest Price</div>
+            <div className="text-xs text-slate-400 font-medium">Lowest Recorded Fare</div>
             <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-              {watch.current_lowest_price ? formatINR(watch.current_lowest_price) : 'Checking...'}
+              {watch.current_lowest_price !== null ? formatINR(watch.current_lowest_price) : 'No price yet'}
             </div>
             <div className="text-[11px] text-slate-400 mt-1">
-              Target: {formatINR(watch.target_price)}
+              {watch.current_price_is_mock ? 'Simulated sample' : 'Lowest recorded'} &bull; Target: {formatINR(watch.target_price)}
             </div>
           </div>
         </div>
@@ -335,7 +406,7 @@ export default function WatchDetailPage({
                       <span className="text-xs font-normal text-slate-400">({snap.flight_number || 'Direct'})</span>
                       {snap.is_mock && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
-                          Mock Provider
+                          Simulated &bull; not a live fare
                         </span>
                       )}
                     </div>
@@ -362,7 +433,7 @@ export default function WatchDetailPage({
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-600 dark:text-sky-400 text-xs font-bold flex items-center gap-1 transition-colors"
                     >
-                      <span>Book</span>
+                      <span>Search fares</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   )}

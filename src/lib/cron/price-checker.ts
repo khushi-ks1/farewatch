@@ -76,6 +76,7 @@ export async function runPriceCheckJob(supabase: SupabaseClient): Promise<CronCh
 
       const datesToCheck = getDatesInRange(watch.departure_date_start, watch.departure_date_end)
       let overallLowestPrice: number | null = watch.current_lowest_price
+      let overallLowestIsMock = watch.current_price_is_mock
       const alertableFlights: EmailAlertFlightPayload[] = []
 
       for (const flightDate of datesToCheck) {
@@ -95,8 +96,13 @@ export async function runPriceCheckJob(supabase: SupabaseClient): Promise<CronCh
         const cheapestForDate = flights[0]
 
         // Update overall lowest price
-        if (overallLowestPrice === null || cheapestForDate.price < overallLowestPrice) {
+        if (
+          overallLowestPrice === null ||
+          cheapestForDate.price < overallLowestPrice ||
+          (cheapestForDate.price === overallLowestPrice && overallLowestIsMock && !cheapestForDate.is_mock)
+        ) {
           overallLowestPrice = cheapestForDate.price
+          overallLowestIsMock = Boolean(cheapestForDate.is_mock)
         }
 
         // 4. Save cheapest snapshot for this watch
@@ -119,6 +125,8 @@ export async function runPriceCheckJob(supabase: SupabaseClient): Promise<CronCh
 
         // 5. Evaluate matching flights for alert rules
         for (const flight of flights) {
+          if (flight.is_mock) continue
+
           let matchesRule = false
           if (watch.rule_type === 'BELOW') {
             matchesRule = flight.price <= watch.target_price
@@ -160,6 +168,7 @@ export async function runPriceCheckJob(supabase: SupabaseClient): Promise<CronCh
         .update({
           last_checked_at: new Date().toISOString(),
           current_lowest_price: overallLowestPrice,
+          current_price_is_mock: overallLowestIsMock,
         })
         .eq('id', watch.id)
 

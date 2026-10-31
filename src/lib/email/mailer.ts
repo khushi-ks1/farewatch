@@ -58,14 +58,24 @@ export interface EmailAlertFlightPayload {
   previousPrice?: number
 }
 
+export function filterLiveAlertFlights(
+  matchingFlights: EmailAlertFlightPayload[]
+): EmailAlertFlightPayload[] {
+  return matchingFlights.filter(({ flight }) => flight.is_mock !== true)
+}
+
 export async function sendPriceAlertEmail(
   supabase: SupabaseClient,
   recipientEmail: string,
   watch: Watch,
   matchingFlights: EmailAlertFlightPayload[]
 ): Promise<{ success: boolean; skippedReason?: string }> {
-  if (matchingFlights.length === 0) {
-    return { success: false, skippedReason: 'No flights provided' }
+  const liveMatchingFlights = filterLiveAlertFlights(matchingFlights)
+  if (liveMatchingFlights.length === 0) {
+    return {
+      success: false,
+      skippedReason: matchingFlights.length === 0 ? 'No flights provided' : 'No live fares provided',
+    }
   }
 
   // 1. Check daily Gmail email cap (400/day)
@@ -90,10 +100,10 @@ export async function sendPriceAlertEmail(
     : `${appUrl}/dashboard`
 
   const routeTitle = `${watch.origin_code} (${watch.origin_city}) → ${watch.destination_code} (${watch.destination_city})`
-  const cheapestPrice = matchingFlights[0].flight.price
+  const cheapestPrice = liveMatchingFlights[0].flight.price
 
   // Render HTML email template
-  const flightCardsHtml = matchingFlights
+  const flightCardsHtml = liveMatchingFlights
     .map(({ flight, previousPrice }) => {
       const stopsText = flight.stops === 0 ? 'Non-stop' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`
       const dateText = formatISTDate(flight.flight_date)
@@ -172,7 +182,7 @@ export async function sendPriceAlertEmail(
 
   if (!transporter) {
     // Not a success: nothing was delivered, so the alert must not be recorded as sent
-    console.warn(`[Mailer] Gmail credentials not set. Alert email to ${recipientEmail} with ${matchingFlights.length} deals was NOT sent.`)
+    console.warn(`[Mailer] Gmail credentials not set. Alert email to ${recipientEmail} with ${liveMatchingFlights.length} deals was NOT sent.`)
     return { success: false, skippedReason: 'Not sent: no Gmail credentials in env' }
   }
 

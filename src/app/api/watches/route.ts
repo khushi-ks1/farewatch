@@ -154,10 +154,12 @@ export async function POST(request: NextRequest) {
           .update({
             last_checked_at: new Date().toISOString(),
             current_lowest_price: lowest.price,
+            current_price_is_mock: Boolean(lowest.is_mock),
           })
           .eq('id', newWatch.id)
 
         newWatch.current_lowest_price = lowest.price
+        newWatch.current_price_is_mock = Boolean(lowest.is_mock)
         newWatch.last_checked_at = new Date().toISOString()
       }
     } catch (searchErr) {

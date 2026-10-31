@@ -33,7 +33,7 @@ export default function PrivacyPage() {
             FareWatch collects only the minimum personal information required to deliver our flight alert service:
           </p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Your Email Address:</strong> Used strictly for authentication (magic links / Google OAuth) and for sending you flight deal alerts that you explicitly set up.</li>
+            <li><strong>Your Email Address:</strong> Used for email-link authentication and for sending the flight alerts you set up.</li>
             <li><strong>Flight Watches:</strong> The origin airport, destination airport, travel dates, and price threshold rules you create.</li>
           </ul>
         </section>
@@ -46,8 +46,8 @@ export default function PrivacyPage() {
             Your information is used solely to:
           </p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Search for live flight fares matching your saved routes.</li>
-            <li>Send email alerts when matching fares are detected.</li>
+            <li>Search for flight fares matching your saved routes using our configured flight-search provider.</li>
+            <li>Send email alerts when live results match your price rules. Simulated sample fares are never emailed as deals.</li>
             <li>Provide you with historical price charts in your private dashboard.</li>
           </ul>
           <p className="font-semibold text-slate-800 dark:text-slate-200">
@@ -61,6 +61,9 @@ export default function PrivacyPage() {
           </h2>
           <p>
             Our database utilizes PostgreSQL Row Level Security (RLS). This ensures that each user can only view and manage their own watches. Search results are cached anonymously on the server to reduce third-party API queries.
+          </p>
+          <p>
+            FareWatch uses Supabase to provide authentication and database hosting, a flight-search provider to look up route fares, and an email service to deliver alerts. Route and travel-date details are sent to the flight-search provider to perform each search. Prices may change before you book; always verify the final fare with the booking provider.
           </p>
         </section>
 

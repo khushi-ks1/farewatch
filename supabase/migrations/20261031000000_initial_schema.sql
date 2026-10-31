@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS public.watches (
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   last_checked_at TIMESTAMPTZ,
   current_lowest_price NUMERIC(10, 2),
+  current_price_is_mock BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
