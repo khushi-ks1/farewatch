@@ -11,7 +11,7 @@
 
 ## 🌐 Live Demo & Repository
 - **Live Application:** [https://farewatch.vercel.app](https://farewatch.vercel.app)
-- **GitHub Repository:** [https://github.com/khivyasajjan/farewatch](https://github.com/khivyasajjan/farewatch)
+- **GitHub Repository:** [https://github.com/khushi-ks1/farewatch](https://github.com/khushi-ks1/farewatch)
 
 ---
 
@@ -153,7 +153,7 @@ Create `.env.local` for local development. Only placeholders are in `.env.exampl
 ### 1. Clone & Install Dependencies
 
 ```bash
-git clone https://github.com/khivyasajjan/farewatch.git
+git clone https://github.com/khushi-ks1/farewatch.git
 cd farewatch
 pnpm install
 ```

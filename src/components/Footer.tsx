@@ -16,7 +16,7 @@ export function Footer() {
             Privacy Policy
           </Link>
           <a
-            href="https://github.com/khivyasajjan/farewatch"
+            href="https://github.com/khushi-ks1/farewatch"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-slate-900 dark:hover:text-white transition-colors"
