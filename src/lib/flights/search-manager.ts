@@ -41,72 +41,105 @@ export async function getFlightsForRoute(
 
   // 2. Check if SerpApi Key is configured
   const serpApiKey = process.env.SERPAPI_API_KEY
-  let useSerpApi = Boolean(serpApiKey && serpApiKey.trim() !== '' && serpApiKey !== 'your-serpapi-key')
+  const isKeyConfigured = Boolean(
+    serpApiKey && serpApiKey.trim() !== '' && serpApiKey !== 'your-serpapi-key'
+  )
 
-  // 3. If SerpApi is configured, check monthly usage quota
-  if (useSerpApi) {
-    const now = new Date()
-    const firstDayOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().split('T')[0]
+  // 3. Fall back to mock provider ONLY if no API key is configured (local testing)
+  if (!isKeyConfigured) {
+    const flights = searchMockFlights(origin, destination, date, nonStopOnly)
 
-    const { data: usageRows } = await supabase
-      .from('usage')
-      .select('serpapi_searches_count')
-      .gte('usage_date', firstDayOfMonth)
+    // Cache mock results
+    const expiresAt = new Date(Date.now() + CACHE_TTL_MINUTES * 60 * 1000).toISOString()
+    await supabase
+      .from('search_cache')
+      .upsert({
+        cache_key: cacheKey,
+        origin_code: origin.toUpperCase(),
+        destination_code: destination.toUpperCase(),
+        flight_date: date,
+        is_non_stop_only: nonStopOnly,
+        results_json: flights,
+        cached_at: new Date().toISOString(),
+        expires_at: expiresAt,
+      }, { onConflict: 'cache_key' })
 
-    const totalUsedThisMonth = (usageRows || []).reduce(
-      (sum, row) => sum + (row.serpapi_searches_count || 0),
-      0
+    return {
+      flights,
+      fromCache: false,
+      provider: 'mock',
+    }
+  }
+
+  // 4. In production (SERPAPI_API_KEY is configured): Check monthly usage quota
+  const now = new Date()
+  const firstDayOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString().split('T')[0]
+
+  const { data: usageRows } = await supabase
+    .from('usage')
+    .select('serpapi_searches_count')
+    .gte('usage_date', firstDayOfMonth)
+
+  const totalUsedThisMonth = (usageRows || []).reduce(
+    (sum, row) => sum + (row.serpapi_searches_count || 0),
+    0
+  )
+
+  // When quota runs out, DO NOT fall back to mock provider. Skip the check and log it.
+  if (totalUsedThisMonth >= MONTHLY_SERPAPI_LIMIT) {
+    console.warn(
+      `[SearchManager] SerpApi monthly quota reached limit (${totalUsedThisMonth}/${MONTHLY_SERPAPI_LIMIT}). Skipping price check for ${origin}→${destination} on ${date} to avoid emailing fake fares.`
     )
-
-    if (totalUsedThisMonth >= MONTHLY_SERPAPI_LIMIT) {
-      console.warn(`[SearchManager] SerpApi monthly quota close to limit (${totalUsedThisMonth}/${MONTHLY_SERPAPI_LIMIT}). Falling back to mock provider.`)
-      useSerpApi = false
+    return {
+      flights: [],
+      fromCache: false,
+      provider: 'serpapi',
     }
   }
 
-  // 4. Fetch flights from provider
-  let flights: FlightResult[] = []
-  let providerUsed: 'serpapi' | 'mock' = 'mock'
+  // 5. Query SerpApi Google Flights API
+  try {
+    const flights = await searchSerpApiFlights(origin, destination, date, nonStopOnly)
 
-  if (useSerpApi) {
-    try {
-      flights = await searchSerpApiFlights(origin, destination, date, nonStopOnly)
-      providerUsed = 'serpapi'
+    // Increment SerpApi usage for today
+    const today = new Date().toISOString().split('T')[0]
+    await supabase.rpc('increment_serpapi_usage', {
+      p_date: today,
+      p_count: 1,
+    })
 
-      // Increment SerpApi usage for today
-      const today = new Date().toISOString().split('T')[0]
-      await supabase.rpc('increment_serpapi_usage', {
-        p_date: today,
-        p_count: 1,
-      })
-    } catch (err) {
-      console.error('[SearchManager] SerpApi failed, falling back to mock provider:', err)
-      flights = searchMockFlights(origin, destination, date, nonStopOnly)
-      providerUsed = 'mock'
+    // Cache successful results for 60 minutes
+    if (flights.length > 0) {
+      const expiresAt = new Date(Date.now() + CACHE_TTL_MINUTES * 60 * 1000).toISOString()
+      await supabase
+        .from('search_cache')
+        .upsert({
+          cache_key: cacheKey,
+          origin_code: origin.toUpperCase(),
+          destination_code: destination.toUpperCase(),
+          flight_date: date,
+          is_non_stop_only: nonStopOnly,
+          results_json: flights,
+          cached_at: new Date().toISOString(),
+          expires_at: expiresAt,
+        }, { onConflict: 'cache_key' })
     }
-  } else {
-    flights = searchMockFlights(origin, destination, date, nonStopOnly)
-    providerUsed = 'mock'
-  }
 
-  // 5. Save to search_cache (expires in 60 minutes)
-  const expiresAt = new Date(Date.now() + CACHE_TTL_MINUTES * 60 * 1000).toISOString()
-  await supabase
-    .from('search_cache')
-    .upsert({
-      cache_key: cacheKey,
-      origin_code: origin.toUpperCase(),
-      destination_code: destination.toUpperCase(),
-      flight_date: date,
-      is_non_stop_only: nonStopOnly,
-      results_json: flights,
-      cached_at: new Date().toISOString(),
-      expires_at: expiresAt,
-    }, { onConflict: 'cache_key' })
-
-  return {
-    flights,
-    fromCache: false,
-    provider: providerUsed,
+    return {
+      flights,
+      fromCache: false,
+      provider: 'serpapi',
+    }
+  } catch (err) {
+    // In production, log error and skip check. Never fall back to mock fares on failure.
+    console.error(
+      `[SearchManager] SerpApi search failed for ${origin}→${destination} on ${date}. Skipping check (no mock fallback in production):`,
+      err
+    )
+    return {
+      flights: [],
+      fromCache: false,
+      provider: 'serpapi',
+    }
   }
 }
