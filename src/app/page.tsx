@@ -62,12 +62,12 @@ export default function LandingPage() {
                       <Plane className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-slate-900 dark:text-white">Live Alert Preview</div>
-                      <div className="text-xs text-slate-400">Just checked &bull; Cached route</div>
+                      <div className="text-sm font-bold text-slate-900 dark:text-white">Example Alert</div>
+                      <div className="text-xs text-slate-400">Sample only &bull; not a live fare</div>
                     </div>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                    Deal Found
+                    Example
                   </span>
                 </div>
 
@@ -110,9 +110,14 @@ export default function LandingPage() {
                 </div>
 
                 <div className="pt-2">
-                  <div className="w-full py-2.5 rounded-xl bg-sky-600 text-white font-semibold text-sm text-center shadow-sm">
-                    Book on Google Flights &rarr;
-                  </div>
+                  <a
+                    href="https://www.google.com/travel/flights?q=Flights%20to%20HYD%20from%20BLR%20one%20way"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm text-center shadow-sm transition-colors"
+                  >
+                    See real BLR &rarr; HYD fares on Google Flights
+                  </a>
                 </div>
               </div>
             </div>
