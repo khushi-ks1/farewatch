@@ -1,8 +1,10 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useId } from 'react'
 import { Airport, searchAirports, INDIAN_AIRPORTS } from '@/lib/airports'
-import { Plane, Search, X } from 'lucide-react'
+import { ChevronsUpDown, Search, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { labelClass } from './ui'
 
 interface AirportSelectProps {
   label: string
@@ -15,6 +17,7 @@ export function AirportSelect({ label, value, onChange, excludeCode }: AirportSe
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const id = useId()
 
   const selectedAirport = INDIAN_AIRPORTS.find((a) => a.code === value)
   const filtered = searchAirports(query).filter((a) => a.code !== excludeCode)
@@ -25,107 +28,109 @@ export function AirportSelect({ label, value, onChange, excludeCode }: AirportSe
         setIsOpen(false)
       }
     }
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsOpen(false)
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
   }, [])
 
   return (
     <div className="relative" ref={containerRef}>
-      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+      <span id={`${id}-label`} className={labelClass}>
         {label}
-      </label>
+      </span>
 
-      {/* Button to open dropdown */}
       <button
         type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-labelledby={`${id}-label`}
         onClick={() => {
           setIsOpen(!isOpen)
           setQuery('')
         }}
-        className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-left transition-colors hover:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+        className={cn(
+          'flex h-12 w-full items-center justify-between gap-3 rounded-md border bg-surface px-3 text-left transition-colors focus:outline-none focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent-soft',
+          isOpen ? 'border-accent ring-3 ring-accent-soft' : 'border-line-strong hover:border-faint'
+        )}
       >
         {selectedAirport ? (
-          <div className="flex items-center gap-3">
-            <span className="px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 font-bold text-sm tracking-wide">
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="w-9 shrink-0 text-[15px] font-semibold tabular-nums tracking-[-0.01em] text-fg">
               {selectedAirport.code}
             </span>
-            <div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                {selectedAirport.city}
-              </div>
-              <div className="text-xs text-slate-400 truncate max-w-[200px]">
-                {selectedAirport.name}
-              </div>
-            </div>
-          </div>
+            <span className="min-w-0">
+              <span className="block truncate text-sm text-fg">{selectedAirport.city}</span>
+              <span className="block truncate text-xs text-muted">{selectedAirport.name}</span>
+            </span>
+          </span>
         ) : (
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <Plane className="w-4 h-4" />
-            <span>Select Indian airport...</span>
-          </div>
+          <span className="text-sm text-faint">Choose an airport</span>
         )}
+        <ChevronsUpDown className="h-4 w-4 shrink-0 text-faint" />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-2 max-h-72 overflow-hidden flex flex-col">
-          {/* Search Input */}
-          <div className="relative mb-2 px-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="absolute left-0 right-0 top-full z-50 mt-1.5 flex max-h-80 flex-col overflow-hidden rounded-lg border border-line-strong bg-surface shadow-[0_16px_40px_-12px_rgb(0_0_0/0.25)]">
+          <div className="relative border-b border-line">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
             <input
               type="text"
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by city or code (e.g. BLR, Delhi)..."
-              className="w-full pl-9 pr-8 py-2 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-900 dark:text-white text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              placeholder="City or code, e.g. Delhi or BLR"
+              aria-label={`Search ${label.toLowerCase()} airports`}
+              className="h-10 w-full bg-transparent pl-9 pr-9 text-sm text-fg placeholder:text-faint focus:outline-none"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-faint hover:text-fg"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
 
-          {/* List */}
-          <div className="overflow-y-auto divide-y divide-slate-100 dark:divide-slate-750">
+          <ul role="listbox" aria-labelledby={`${id}-label`} className="overflow-y-auto p-1">
             {filtered.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-400">
-                No Indian airports found matching &quot;{query}&quot;
-              </div>
+              <li className="px-3 py-6 text-center text-[13px] text-muted">
+                No Indian airports match &ldquo;{query}&rdquo;
+              </li>
             ) : (
               filtered.map((airport) => (
-                <button
-                  key={airport.code}
-                  type="button"
-                  onClick={() => {
-                    onChange(airport)
-                    setIsOpen(false)
-                  }}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/60 ${
-                    airport.code === value ? 'bg-sky-50 dark:bg-sky-950/40' : ''
-                  }`}
-                >
-                  <div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <span>{airport.city}</span>
-                      <span className="text-[10px] font-normal text-slate-400">({airport.state})</span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 truncate max-w-[220px]">
-                      {airport.name}
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-mono font-bold text-xs">
-                    {airport.code}
-                  </span>
-                </button>
+                <li key={airport.code} role="option" aria-selected={airport.code === value}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(airport)
+                      setIsOpen(false)
+                    }}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-subtle',
+                      airport.code === value && 'bg-accent-soft'
+                    )}
+                  >
+                    <span className="w-9 shrink-0 text-[13px] font-semibold tabular-nums text-fg">{airport.code}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] text-fg">
+                        {airport.city} <span className="text-faint">{airport.state}</span>
+                      </span>
+                      <span className="block truncate text-xs text-muted">{airport.name}</span>
+                    </span>
+                  </button>
+                </li>
               ))
             )}
-          </div>
+          </ul>
         </div>
       )}
     </div>

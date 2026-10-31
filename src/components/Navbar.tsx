@@ -5,7 +5,9 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from './ThemeProvider'
-import { Plane, SunMoon, Plus, ShieldCheck, LogOut } from 'lucide-react'
+import { LogoMark, buttonClass, iconButtonClass } from './ui'
+import { cn } from '@/lib/utils'
+import { Moon, Sun, Plus, LogOut } from 'lucide-react'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -39,87 +41,64 @@ export function Navbar() {
     router.refresh()
   }
 
-  return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2 font-black text-xl tracking-tight text-slate-900 dark:text-white">
-          <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-sm shadow-sky-600/30">
-            <Plane className="w-5 h-5 -rotate-45" />
-          </div>
-          <span>Fare<span className="text-sky-600 dark:text-sky-400">Watch</span></span>
-          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300">India</span>
-        </Link>
+  const navLink = (href: string, label: string) => (
+    <Link
+      href={href}
+      aria-current={pathname === href ? 'page' : undefined}
+      className={cn(
+        'h-8 inline-flex items-center rounded-md px-2.5 text-[13px] font-medium transition-colors',
+        pathname === href ? 'text-fg bg-subtle' : 'text-muted hover:text-fg'
+      )}
+    >
+      {label}
+    </Link>
+  )
 
-        {/* Right Nav */}
-        <div className="flex items-center gap-2 sm:gap-3">
+  return (
+    <header className="sticky top-0 z-40 w-full border-b border-line bg-bg/80 backdrop-blur-md supports-[backdrop-filter]:bg-bg/70">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="flex items-center gap-6">
+          <Link href={userEmail ? '/dashboard' : '/'} className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em] text-fg">
+            <LogoMark />
+            <span>FareWatch</span>
+          </Link>
+
+          {userEmail && (
+            <nav className="hidden sm:flex items-center gap-1">
+              {navLink('/dashboard', 'Watches')}
+              {isAdmin && navLink('/admin', 'Admin')}
+            </nav>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5">
           {userEmail ? (
             <>
-              <Link
-                href="/dashboard"
-                className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-                  pathname === '/dashboard'
-                    ? 'bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                Dashboard
+              <nav className="flex sm:hidden items-center gap-1 mr-1">
+                {navLink('/dashboard', 'Watches')}
+                {isAdmin && navLink('/admin', 'Admin')}
+              </nav>
+              <Link href="/watches/new" className={buttonClass('primary', 'sm', 'hidden sm:inline-flex')}>
+                <Plus className="h-3.5 w-3.5" />
+                New watch
               </Link>
-
-              <Link
-                href="/watches/new"
-                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>New Watch</span>
-              </Link>
-
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className={`text-sm font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors ${
-                    pathname === '/admin'
-                      ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'
-                      : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
-                  }`}
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span className="hidden md:inline">Admin</span>
-                </Link>
-              )}
-
-              {/* User avatar / Sign out */}
-              <div className="flex items-center pl-2 border-l border-slate-200 dark:border-slate-800 gap-2">
-                <span className="hidden lg:inline text-xs font-medium text-slate-500 dark:text-slate-400 truncate max-w-[140px]">
-                  {userEmail}
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  title="Sign out"
-                  className="p-2 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
+              <span className="hidden lg:inline pl-3 text-[13px] text-muted truncate max-w-[180px]">{userEmail}</span>
+              <button onClick={handleSignOut} title="Sign out" aria-label="Sign out" className={iconButtonClass}>
+                <LogOut className="h-4 w-4" />
+              </button>
             </>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="text-sm font-semibold px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white shadow-sm transition-colors"
-              >
-                Sign In
+            pathname !== '/login' && (
+              <Link href="/login" className={buttonClass('secondary', 'sm')}>
+                Sign in
               </Link>
-            </>
+            )
           )}
 
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle color theme"
-            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <SunMoon className="h-4 w-4" />
+          <button onClick={toggleTheme} aria-label="Toggle color theme" className={iconButtonClass}>
+            {/* Icon follows the .dark class so it never mismatches during hydration */}
+            <Sun className="hidden h-4 w-4 dark:block" />
+            <Moon className="h-4 w-4 dark:hidden" />
           </button>
         </div>
       </div>

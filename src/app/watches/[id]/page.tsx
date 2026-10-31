@@ -6,7 +6,7 @@ import React, { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Watch, PriceSnapshot } from '@/lib/types'
-import { formatINR } from '@/lib/utils'
+import { cn, formatINR, formatTravelDates } from '@/lib/utils'
 import {
   LineChart,
   Line,
@@ -17,17 +17,16 @@ import {
   ReferenceLine,
   CartesianGrid,
 } from 'recharts'
-import {
-  ArrowLeft,
-  Plane,
-  Sparkles,
-  ExternalLink,
-  Pause,
-  Play,
-  Trash2,
-  Calendar,
-  TrendingDown,
-} from 'lucide-react'
+import { ArrowLeft, ExternalLink, Pause, Play, Trash2 } from 'lucide-react'
+import { useTheme } from '@/components/ThemeProvider'
+import { LoadingState, Notice, StatusPill, buttonClass, getWatchStatus } from '@/components/ui'
+
+// Recharts writes colours as SVG attributes, so it gets hex values rather than CSS variables.
+const CHART_COLORS = {
+  light: { line: '#4338ca', grid: '#e6e5e2', axis: '#9a9aa0', target: '#66666c', tipBg: '#ffffff', tipBorder: '#d4d3cf', tipText: '#111112' },
+  dark: { line: '#8b8dff', grid: '#222225', axis: '#66666d', target: '#9c9ca3', tipBg: '#18181b', tipBorder: '#2f2f33', tipText: '#ededee' },
+}
+
 
 export default function WatchDetailPage({
   params,
@@ -36,6 +35,7 @@ export default function WatchDetailPage({
 }) {
   const { id } = use(params)
   const router = useRouter()
+  const { theme } = useTheme()
   const [watch, setWatch] = useState<Watch | null>(null)
   const [snapshots, setSnapshots] = useState<PriceSnapshot[]>([])
   const [loading, setLoading] = useState(true)
@@ -108,25 +108,24 @@ export default function WatchDetailPage({
     }
   }
 
+
   if (loading) {
-    return (
-      <div className="py-24 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-sky-600 border-t-transparent mb-3" />
-        <p className="text-sm text-slate-500">Loading flight watch details...</p>
-      </div>
-    )
+    return <LoadingState label="Loading watch" />
   }
 
   if (!watch) {
     return (
-      <div className="max-w-md mx-auto py-20 text-center">
-        <p className="text-slate-500 mb-4">Flight watch not found</p>
-        <Link href="/dashboard" className="text-sky-600 font-bold underline">
-          Return to Dashboard
+      <div className="mx-auto max-w-md px-4 py-24 text-center">
+        <h1 className="text-[15px] font-semibold text-fg">This watch doesn’t exist</h1>
+        <p className="mt-1.5 text-sm text-muted">It may have been deleted.</p>
+        <Link href="/dashboard" className={buttonClass('secondary', 'md', 'mt-6')}>
+          Back to watches
         </Link>
       </div>
     )
   }
+
+  const colors = CHART_COLORS[theme]
 
   // Prepare chart data
   const chartData = snapshots.map((s) => {
@@ -146,283 +145,218 @@ export default function WatchDetailPage({
     }
   })
 
-  const isDeal =
-    !watch.current_price_is_mock &&
-    watch.current_lowest_price !== null &&
-    (watch.rule_type === 'BELOW'
-      ? watch.current_lowest_price <= watch.target_price
-      : watch.current_lowest_price >= watch.target_price &&
-        watch.current_lowest_price <= (watch.target_price_upper || watch.target_price))
+  const status = getWatchStatus(watch)
+  const ruleText =
+    watch.rule_type === 'BELOW'
+      ? `Under ${formatINR(watch.target_price)}`
+      : `${formatINR(watch.target_price)} – ${formatINR(watch.target_price_upper || 0)}`
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 w-full space-y-8">
-      {/* Top back & actions */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Dashboard</span>
-        </Link>
+    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 md:py-14">
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-fg"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Watches
+      </Link>
+
+      {/* Header */}
+      <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusPill status={status} />
+            {watch.is_non_stop_only && (
+              <span className="inline-flex h-6 items-center rounded-full border border-line px-2.5 text-xs text-muted">
+                Non-stop only
+              </span>
+            )}
+          </div>
+          <h1 className="mt-3 text-[32px] font-semibold leading-tight tracking-[-0.04em] text-fg tabular-nums">
+            {watch.origin_code} – {watch.destination_code}
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            {watch.origin_city} to {watch.destination_city}, {formatTravelDates(watch.departure_date_start, watch.departure_date_end)}
+          </p>
+        </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleTogglePause}
-            disabled={actionLoading}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors border ${
-              watch.is_active
-                ? 'border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
-                : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-            }`}
-          >
-            {watch.is_active ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{watch.is_active ? 'Pause Watch' : 'Resume Watch'}</span>
+          <button onClick={handleTogglePause} disabled={actionLoading} className={buttonClass('secondary', 'md')}>
+            {watch.is_active ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            {watch.is_active ? 'Pause' : 'Resume'}
           </button>
-
           <button
             onClick={() => setConfirmingDelete(true)}
             disabled={actionLoading}
-            className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors"
-            title="Delete Watch"
+            className={buttonClass('secondary', 'md', 'w-9 px-0 text-muted hover:text-bad')}
+            title="Delete watch"
             aria-label="Delete watch"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       {message && (
-        <div
-          role={message.type === 'error' ? 'alert' : 'status'}
-          className={`rounded-xl border p-4 text-sm ${
-            message.type === 'error'
-              ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300'
-              : 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <span>{message.text}</span>
-            <button onClick={() => setMessage(null)} className="text-xs font-bold underline">
-              Dismiss
-            </button>
-          </div>
-        </div>
+        <Notice tone={message.type} onDismiss={() => setMessage(null)} className="mt-6">
+          {message.text}
+        </Notice>
       )}
 
       {confirmingDelete && (
         <div
           role="alertdialog"
           aria-labelledby="delete-watch-title"
-          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30"
+          className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-bad/25 bg-bad-soft px-4 py-3"
         >
           <div>
-            <h2 id="delete-watch-title" className="text-sm font-bold text-slate-900 dark:text-white">
+            <h2 id="delete-watch-title" className="text-sm font-medium text-fg">
               Delete this watch?
             </h2>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-              Its saved price history will also be removed.
-            </p>
+            <p className="mt-0.5 text-[13px] text-muted">Its saved price history will also be removed.</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setConfirmingDelete(false)}
-              className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-white dark:text-slate-200 dark:hover:bg-slate-800"
-            >
+            <button onClick={() => setConfirmingDelete(false)} className={buttonClass('ghost', 'sm')}>
               Cancel
             </button>
-            <button
-              onClick={() => void handleDelete()}
-              disabled={actionLoading}
-              className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-            >
-              {actionLoading ? 'Deleting…' : 'Delete watch'}
+            <button onClick={() => void handleDelete()} disabled={actionLoading} className={buttonClass('danger', 'sm')}>
+              {actionLoading ? 'Deleting' : 'Delete watch'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Watch Card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
-        {watch.current_price_is_mock && (
-          <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-            <p className="font-bold">Simulated sample price — not a live fare</p>
-            <p className="mt-1 text-xs leading-relaxed">
-              This result is for preview only. Simulated fares never trigger email alerts. Configure a live fare provider to monitor bookable prices.
-            </p>
+      {watch.current_price_is_mock && (
+        <Notice tone="warning" className="mt-6">
+          <span className="font-medium">This is a simulated sample price, not a live fare.</span> Simulated fares are for
+          preview only and never trigger email alerts. Configure a live fare provider to monitor bookable prices.
+        </Notice>
+      )}
+
+      {/* Key figures */}
+      <dl className="mt-8 grid grid-cols-2 divide-line overflow-hidden rounded-lg border border-line bg-surface sm:grid-cols-3 sm:divide-x">
+        <div className="col-span-2 border-b border-line px-5 py-4 sm:col-span-1 sm:border-b-0">
+          <dt className="text-[13px] text-muted">{watch.current_price_is_mock ? 'Lowest sample fare' : 'Lowest recorded fare'}</dt>
+          <dd
+            className={cn(
+              'mt-1 text-[28px] font-semibold tracking-[-0.03em] tabular-nums',
+              status === 'deal' ? 'text-good' : 'text-fg'
+            )}
+          >
+            {watch.current_lowest_price !== null ? formatINR(watch.current_lowest_price) : '—'}
+          </dd>
+        </div>
+        <div className="border-r border-line px-5 py-4 sm:border-r-0">
+          <dt className="text-[13px] text-muted">Your target</dt>
+          <dd className="mt-1 text-[17px] font-medium tabular-nums text-fg">{ruleText}</dd>
+        </div>
+        <div className="px-5 py-4">
+          <dt className="text-[13px] text-muted">Checks recorded</dt>
+          <dd className="mt-1 text-[17px] font-medium tabular-nums text-fg">{snapshots.length}</dd>
+        </div>
+      </dl>
+
+      {/* Price history chart */}
+      <section className="mt-8 rounded-lg border border-line bg-surface">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+          <h2 className="text-[15px] font-semibold text-fg">Price history</h2>
+          <span className="flex items-center gap-2 text-[13px] text-muted">
+            <span className="inline-block w-4 border-t border-dashed" style={{ borderColor: colors.target }} aria-hidden />
+            Target
+          </span>
+        </div>
+
+        {chartData.length === 0 ? (
+          <div className="flex h-64 items-center justify-center px-6 text-center text-sm text-muted">
+            No prices yet. The first check runs within 30 minutes.
+          </div>
+        ) : (
+          <div className="h-72 w-full px-2 pt-5 pb-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 16, left: 4, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke={colors.grid} />
+                <XAxis
+                  dataKey="time"
+                  stroke={colors.axis}
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  minTickGap={32}
+                  dy={6}
+                />
+                <YAxis
+                  stroke={colors.axis}
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  width={64}
+                  domain={['auto', 'auto']}
+                  tickFormatter={(val) => formatINR(Number(val))}
+                />
+                <Tooltip
+                  cursor={{ stroke: colors.grid }}
+                  contentStyle={{
+                    backgroundColor: colors.tipBg,
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.tipBorder}`,
+                    color: colors.tipText,
+                    fontSize: '12px',
+                    boxShadow: 'none',
+                  }}
+                  labelStyle={{ color: colors.axis, marginBottom: 2 }}
+                  itemStyle={{ color: colors.tipText }}
+                  formatter={(val: unknown) => [formatINR(Number(val)), 'Fare']}
+                />
+                <ReferenceLine y={Number(watch.target_price)} stroke={colors.target} strokeDasharray="4 4" />
+                {watch.rule_type === 'BETWEEN' && watch.target_price_upper && (
+                  <ReferenceLine y={Number(watch.target_price_upper)} stroke={colors.target} strokeDasharray="4 4" />
+                )}
+                <Line
+                  type="monotone"
+                  dataKey="price"
+                  stroke={colors.line}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 0, fill: colors.line }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              {!watch.is_active ? (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
-                  Paused
-                </span>
-              ) : watch.current_price_is_mock ? (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
-                  Sample fare
-                </span>
-              ) : (
-                isDeal ? (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> Deal Found
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
-                    Above Target
-                  </span>
-                )
-              )}
+      </section>
 
-              {watch.is_non_stop_only && (
-                <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 dark:bg-sky-950 text-sky-600">
-                  Non-stop only
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="text-3xl font-black text-slate-900 dark:text-white">{watch.origin_code}</span>
-              <span className="text-slate-400 font-normal">({watch.origin_city})</span>
-              <span className="text-slate-300 dark:text-slate-600 text-2xl font-light">&rarr;</span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">{watch.destination_code}</span>
-              <span className="text-slate-400 font-normal">({watch.destination_city})</span>
-            </div>
-
-            <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 mt-2">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-sky-600" />
-                <span>
-                  {watch.departure_date_start}
-                  {watch.departure_date_end ? ` to ${watch.departure_date_end}` : ''}
-                </span>
-              </span>
-              <span>&bull;</span>
-              <span>Rule: <strong>{watch.rule_type === 'BELOW' ? `Below ${formatINR(watch.target_price)}` : `${formatINR(watch.target_price)} – ${formatINR(watch.target_price_upper || 0)}`}</strong></span>
-            </div>
-          </div>
-
-          <div className="text-left md:text-right p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
-            <div className="text-xs text-slate-400 font-medium">Lowest Recorded Fare</div>
-            <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-              {watch.current_lowest_price !== null ? formatINR(watch.current_lowest_price) : 'No price yet'}
-            </div>
-            <div className="text-[11px] text-slate-400 mt-1">
-              {watch.current_price_is_mock ? 'Simulated sample' : 'Lowest recorded'} &bull; Target: {formatINR(watch.target_price)}
-            </div>
-          </div>
+      {/* Snapshots */}
+      <section className="mt-8 rounded-lg border border-line bg-surface">
+        <div className="border-b border-line px-5 py-3.5">
+          <h2 className="text-[15px] font-semibold text-fg">Fares found</h2>
         </div>
-
-        {/* Price History Chart */}
-        <div className="pt-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <TrendingDown className="w-5 h-5 text-sky-600" />
-              <span>Price History Trend</span>
-            </h3>
-            <span className="text-xs text-slate-400">
-              Target line: {formatINR(watch.target_price)}
-            </span>
-          </div>
-
-          {chartData.length === 0 ? (
-            <div className="h-64 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center text-xs text-slate-400">
-              No price history recorded yet. The background scheduler checks every 30 minutes.
-            </div>
-          ) : (
-            <div className="h-72 w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                  <XAxis
-                    dataKey="time"
-                    stroke="#94a3b8"
-                    fontSize={11}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    stroke="#94a3b8"
-                    fontSize={11}
-                    tickLine={false}
-                    domain={['auto', 'auto']}
-                    tickFormatter={(val) => `₹${val}`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderRadius: '12px',
-                      border: 'none',
-                      color: '#ffffff',
-                      fontSize: '12px',
-                    }}
-                    formatter={(val: unknown) => [formatINR(Number(val)), 'Price']}
-                  />
-                  <ReferenceLine
-                    y={Number(watch.target_price)}
-                    label={{
-                      value: `Target: ${formatINR(watch.target_price)}`,
-                      fill: '#ef4444',
-                      fontSize: 11,
-                      position: 'top',
-                    }}
-                    stroke="#ef4444"
-                    strokeDasharray="4 4"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#0284c7"
-                    strokeWidth={3}
-                    dot={{ fill: '#0284c7', r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Recent Price Snapshots List */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
-        <h3 className="font-bold text-slate-900 dark:text-white mb-4">
-          Recorded Flight Snapshots ({snapshots.length})
-        </h3>
 
         {snapshots.length === 0 ? (
-          <p className="text-xs text-slate-400">No snapshot records available yet.</p>
+          <p className="px-5 py-8 text-sm text-muted">Fares will appear here after the first check.</p>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="divide-y divide-line">
             {snapshots.slice().reverse().map((snap) => (
-              <div key={snap.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <Plane className="w-5 h-5" />
+              <li key={snap.id} className="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                    <span className="font-medium text-fg">{snap.airline}</span>
+                    <span className="text-muted">{snap.flight_number || 'Direct'}</span>
+                    {snap.is_mock && (
+                      <span className="inline-flex h-5 items-center rounded-full bg-warn-soft px-2 text-[11px] font-medium text-warn">
+                        Simulated, not a live fare
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <span>{snap.airline}</span>
-                      <span className="text-xs font-normal text-slate-400">({snap.flight_number || 'Direct'})</span>
-                      {snap.is_mock && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
-                          Simulated &bull; not a live fare
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      Flight Date: <strong>{snap.flight_date}</strong> &bull; {snap.stops === 0 ? 'Non-stop' : `${snap.stops} stop`}
-                    </div>
+                  <div className="mt-0.5 text-[13px] text-muted tabular-nums">
+                    {formatTravelDates(snap.flight_date)}, {snap.stops === 0 ? 'non-stop' : `${snap.stops} stop`}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-4">
+                <div className="flex items-center justify-between gap-5 sm:justify-end">
                   <div className="text-right">
-                    <div className="text-lg font-black text-slate-900 dark:text-white">
-                      {formatINR(Number(snap.price))}
-                    </div>
-                    <div className="text-[10px] text-slate-400">
-                      Captured {new Date(snap.captured_at).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST
+                    <div className="text-[15px] font-medium tabular-nums text-fg">{formatINR(Number(snap.price))}</div>
+                    <div className="text-xs text-faint tabular-nums">
+                      {new Date(snap.captured_at).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })} IST
                     </div>
                   </div>
 
@@ -431,18 +365,18 @@ export default function WatchDetailPage({
                       href={snap.booking_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-sky-600 dark:text-sky-400 text-xs font-bold flex items-center gap-1 transition-colors"
+                      className={buttonClass('secondary', 'sm')}
                     >
-                      <span>Search fares</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      Search fares
+                      <ExternalLink className="h-3.5 w-3.5 text-muted" />
                     </a>
                   )}
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
     </div>
   )
 }

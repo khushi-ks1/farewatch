@@ -3,52 +3,148 @@
 /* Make `dark:` classes follow the .dark class set by ThemeProvider (not just the OS setting) */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+  FareWatch design tokens.
+  Neutrals carry the interface; indigo is the only accent and is reserved for
+  focus, selection, links and the price line. Status colours are used only on
+  status pills and price states.
+*/
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --border: #e2e8f0;
-  --primary: #0284c7;
-  --primary-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f0fdf4;
-  --accent-foreground: #15803d;
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --subtle: #f3f3f1;
+  --line: #e6e5e2;
+  --line-strong: #d4d3cf;
+  --fg: #111112;
+  --muted: #66666c;
+  --faint: #9a9aa0;
+
+  --accent: #4338ca;
+  --accent-hover: #3730a3;
+  --accent-soft: #eef0ff;
+  --accent-fg: #ffffff;
+
+  --good: #15803d;
+  --good-soft: #ecf8f0;
+  --warn: #a15c07;
+  --warn-soft: #fdf5e6;
+  --bad: #b42318;
+  --bad-soft: #fdf0ef;
+
+  color-scheme: light;
 }
 
 .dark {
-  --background: #090d16;
-  --foreground: #f8fafc;
-  --card: #111827;
-  --card-foreground: #f8fafc;
-  --border: #1f2937;
-  --primary: #38bdf8;
-  --primary-foreground: #090d16;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #064e3b;
-  --accent-foreground: #86efac;
+  --bg: #09090a;
+  --surface: #111113;
+  --subtle: #18181b;
+  --line: #222225;
+  --line-strong: #2f2f33;
+  --fg: #ededee;
+  --muted: #9c9ca3;
+  --faint: #66666d;
+
+  --accent: #8b8dff;
+  --accent-hover: #a5a7ff;
+  --accent-soft: rgb(139 141 255 / 0.12);
+  --accent-fg: #09090a;
+
+  --good: #4ade80;
+  --good-soft: rgb(74 222 128 / 0.1);
+  --warn: #f5b84a;
+  --warn-soft: rgb(245 184 74 / 0.1);
+  --bad: #f87171;
+  --bad-soft: rgb(248 113 113 / 0.1);
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01', 'cv11';
   min-height: 100vh;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 ::selection {
-  background: rgb(14 165 233 / 0.2);
+  background: var(--accent-soft);
+  color: var(--fg);
 }
 
 :focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 3px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
-.hero-glow {
-  background:
-    radial-gradient(ellipse at 82% 18%, rgb(14 165 233 / 0.12), transparent 42%),
-    radial-gradient(ellipse at 12% 0%, rgb(99 102 241 / 0.08), transparent 38%);
+/* Native date inputs: keep the picker icon readable in dark mode */
+.dark input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+/* Hide number spinners; prices are typed, not nudged */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* The one orchestrated moment: the price line drawing in on the landing preview */
+@keyframes fw-draw {
+  from { stroke-dashoffset: var(--fw-len, 600); }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes fw-pop {
+  0%, 70% { opacity: 0; transform: scale(0.4); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.fw-draw {
+  stroke-dasharray: var(--fw-len, 600);
+  animation: fw-draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both;
+}
+.fw-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fw-pop 1.9s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

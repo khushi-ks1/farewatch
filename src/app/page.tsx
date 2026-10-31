@@ -1,260 +1,174 @@
+import type React from 'react'
 import Link from 'next/link'
-import { Plane, Bell, ArrowRight, ShieldCheck, Zap, Sparkles, TrendingDown, Check } from 'lucide-react'
+import { LogoMark, buttonClass } from '@/components/ui'
+
+// Sample data for the illustrative alert. Not a live fare.
+const SAMPLE_PRICES = [5240, 5080, 5390, 4980, 4720, 4860, 4610, 4420, 4560, 4310, 4190, 4080, 3640, 2890]
+const SAMPLE_TARGET = 4000
+
+const CHART_W = 560
+const CHART_H = 150
+const PAD_Y = 14
+const MIN_P = 2500
+const MAX_P = 5600
+
+const x = (i: number) => (i / (SAMPLE_PRICES.length - 1)) * CHART_W
+const y = (p: number) => PAD_Y + (1 - (p - MIN_P) / (MAX_P - MIN_P)) * (CHART_H - PAD_Y * 2)
+
+const linePath = SAMPLE_PRICES.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(p).toFixed(1)}`).join(' ')
+const lastX = x(SAMPLE_PRICES.length - 1)
+const lastY = y(SAMPLE_PRICES[SAMPLE_PRICES.length - 1])
+const targetY = y(SAMPLE_TARGET)
+
+const BENEFITS = [
+  {
+    title: 'One date or a whole window',
+    body: 'Watch a single departure, or let FareWatch scan every day in a window of up to 30 days.',
+  },
+  {
+    title: 'Your price, your rule',
+    body: 'Get told when a fare goes under ₹X, or only when it lands between ₹X and ₹Y. Non-stop only if you prefer.',
+  },
+  {
+    title: 'Quiet until it counts',
+    body: 'Fares are checked every 30 minutes. You hear about a fare once, and again only if it drops another 5%.',
+  },
+]
+
+function AlertPreview() {
+  return (
+    <figure className="w-full">
+      <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-[0_1px_0_0_var(--line),0_24px_48px_-24px_rgb(0_0_0/0.18)]">
+        {/* Message header, styled like the email you receive */}
+        <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <LogoMark className="h-5 w-5 shrink-0" />
+            <span className="text-[13px] font-medium text-fg">FareWatch</span>
+            <span className="truncate text-[13px] text-muted">to you</span>
+          </div>
+          <span className="text-[13px] tabular-nums text-muted">07:30</span>
+        </div>
+
+        <div className="px-5 pt-5 pb-4">
+          <p className="text-[17px] font-semibold tracking-[-0.01em] text-fg">
+            Bengaluru to Hyderabad is now ₹2,890
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Your watch for 15 Dec found a fare under your ₹4,000 target.
+          </p>
+
+          {/* Price trend with target line */}
+          <div className="mt-5">
+            <svg
+              viewBox={`-8 0 ${CHART_W + 16} ${CHART_H}`}
+              className="h-auto w-full overflow-visible"
+              role="img"
+              aria-label="Sample fare trend over two weeks, falling from ₹5,240 to ₹2,890, below the ₹4,000 target"
+            >
+              {[0.25, 0.5, 0.75].map((f) => (
+                <line key={f} x1={0} x2={CHART_W} y1={CHART_H * f} y2={CHART_H * f} className="stroke-line" strokeWidth={1} />
+              ))}
+              <line
+                x1={0}
+                x2={CHART_W}
+                y1={targetY}
+                y2={targetY}
+                className="stroke-muted"
+                strokeWidth={1}
+                strokeDasharray="4 4"
+              />
+              <path
+                d={linePath}
+                pathLength={1}
+                fill="none"
+                className="fw-draw stroke-accent"
+                strokeWidth={2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                style={{ '--fw-len': 1 } as React.CSSProperties}
+              />
+              <g className="fw-pop">
+                <circle cx={lastX} cy={lastY} r={9} className="fill-accent" fillOpacity={0.15} />
+                <circle cx={lastX} cy={lastY} r={4} className="fill-accent" />
+              </g>
+            </svg>
+            <div className="mt-2 flex items-center justify-between gap-4 text-xs text-faint tabular-nums">
+              <span>2 Dec</span>
+              <span className="flex items-center gap-1.5 text-muted">
+                <span className="inline-block w-4 border-t border-dashed border-muted" aria-hidden />
+                Target ₹4,000
+              </span>
+              <span>Today</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Flight row */}
+        <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid grid-cols-3 gap-6 text-[13px]">
+            <div>
+              <div className="text-faint">Flight</div>
+              <div className="mt-0.5 font-medium text-fg">IndiGo 6E 214</div>
+            </div>
+            <div>
+              <div className="text-faint">Departs</div>
+              <div className="mt-0.5 font-medium tabular-nums text-fg">06:10 BLR</div>
+            </div>
+            <div>
+              <div className="text-faint">Stops</div>
+              <div className="mt-0.5 font-medium text-fg">Non-stop</div>
+            </div>
+          </div>
+          <span className={buttonClass('secondary', 'sm', 'pointer-events-none self-start sm:self-auto')} aria-hidden>
+            View on Google Flights
+          </span>
+        </div>
+      </div>
+      <figcaption className="mt-3 text-[13px] text-faint">Example alert with sample data, not a live fare.</figcaption>
+    </figure>
+  )
+}
 
 export default function LandingPage() {
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Hero Section */}
-      <section className="hero-glow relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid lg:grid-cols-12 gap-12 items-center">
-            {/* Left text */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-bold tracking-wide uppercase">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Flight price tracking for India</span>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.1]">
-                A smarter way to watch flight prices.
-              </h1>
-
-              <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
-                Set your route, dates, and target fare. FareWatch checks available flight results on a schedule and emails you when a live fare matches.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                <Link
-                  href="/login"
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-base shadow-lg shadow-sky-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <span>Create a price alert</span>
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-
-                <Link
-                  href="#how-it-works"
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-base transition-colors text-center"
-                >
-                  How it works
-                </Link>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-3 pt-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-500" /> Private price watches
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-500" /> No repeat alerts at the same fare
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-500" /> Google Flights search links
-                </span>
-              </div>
-            </div>
-
-            {/* Right card preview */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl shadow-sky-600/10">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950 flex items-center justify-center text-sky-600">
-                      <Plane className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-slate-900 dark:text-white">Illustrative price alert</div>
-                      <div className="text-xs text-slate-400">Sample data &bull; not a live fare</div>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                    Example
-                  </span>
-                </div>
-
-                <div className="py-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-black text-slate-900 dark:text-white">BLR</div>
-                      <div className="text-xs text-slate-500">Bengaluru</div>
-                    </div>
-                    <div className="flex flex-col items-center px-4">
-                      <span className="text-[11px] font-medium text-slate-400">1h 15m &bull; Non-stop</span>
-                      <div className="w-24 h-[2px] bg-slate-200 dark:bg-slate-700 my-1 relative">
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-sky-600"></div>
-                      </div>
-                      <span className="text-[10px] text-sky-600 font-semibold">IndiGo 6E-214</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-black text-slate-900 dark:text-white">HYD</div>
-                      <div className="text-xs text-slate-500">Hyderabad</div>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">Target Rule:</span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">Below ₹4,000</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">Example fare:</span>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">₹2,890</span>
-                        <span className="text-[10px] text-emerald-600 font-semibold">(-28%)</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">Travel Date:</span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">15 Dec 2026</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <a
-                    href="https://www.google.com/travel/flights?q=Flights%20to%20HYD%20from%20BLR%20one%20way"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm text-center shadow-sm transition-colors"
-                  >
-                    Search BLR &rarr; HYD on Google Flights
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works Section */}
-      <section id="how-it-works" className="scroll-mt-24 py-20 bg-white dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              How FareWatch Works
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400 mt-3 text-base">
-              Choose a route and target once. We handle scheduled checks and let you know when a live result fits.
+    <div className="flex-1">
+      <section className="mx-auto max-w-6xl px-4 pt-16 pb-20 sm:px-6 md:pt-24 lg:pb-28">
+        <div className="grid items-center gap-14 lg:grid-cols-12 lg:gap-12">
+          <div className="lg:col-span-5">
+            <h1 className="max-w-[12ch] text-[44px] font-semibold leading-[1.02] tracking-[-0.045em] text-fg sm:text-6xl lg:text-[64px]">
+              Know the moment your fare drops.
+            </h1>
+            <p className="mt-6 max-w-[42ch] text-[17px] leading-relaxed text-muted">
+              Pick a route, a date and the price you want to pay. FareWatch checks domestic fares in India through the day
+              and emails you when one fits.
             </p>
+            <div className="mt-9 flex flex-col items-start gap-3">
+              <Link href="/login" className={buttonClass('primary', 'lg')}>
+                Create a price alert
+              </Link>
+              <span className="text-[13px] text-faint">Free. Sign in with your email, no password.</span>
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-sky-600">
-                <Plane className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">1. Select Route & Dates</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Choose from major Indian airports (BLR, DEL, BOM, HYD, MAA, and more). Monitor a single travel date or a flexible range like 1–15 Dec.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600">
-                <TrendingDown className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">2. Set Your Price Target</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Define your rule: alert when fares drop below ₹X, or stay within a budget window between ₹X and ₹Y. Optionally toggle non-stop flights only.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-950 flex items-center justify-center text-purple-600">
-                <Bell className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">3. Get Alerts & Book</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Scheduled checks look for live fares that match your rule. Alert emails include flight details and a Google Flights link; verify the final fare before booking.
-              </p>
-            </div>
+          <div className="lg:col-span-7">
+            <AlertPreview />
           </div>
         </div>
       </section>
 
-      {/* Feature Highlights */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider">
-                <Zap className="w-3.5 h-3.5" />
-                <span>Thoughtful notifications</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                Intelligent alerts that respect your inbox.
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-base leading-relaxed">
-                FareWatch remembers previous alerts for each flight and date. You won’t get the same alert twice at the same fare; we’ll notify you again when that fare drops by 5% or more.
-              </p>
-              <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>Consolidated emails: multiple deals sorted cheapest first</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>Pause a watch directly from your email</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>Detailed flight numbers, airlines, duration, and IST timings</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="p-8 rounded-3xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-sky-600 text-white flex items-center justify-center font-bold text-lg">
-                  5
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white">Up to 5 Active Watches</h4>
-                  <p className="text-xs text-slate-500">Track multiple upcoming vacations and business trips simultaneously.</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white">Row-Level Security (RLS)</h4>
-                  <p className="text-xs text-slate-500">Your saved routes and alerts are private to you and never shared with other users.</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-600 text-white flex items-center justify-center">
-                  <TrendingDown className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white">Price History Charts</h4>
-                  <p className="text-xs text-slate-500">Inspect historical price movements for every watch with interactive graphs.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Bottom CTA */}
-      <section className="py-16 bg-gradient-to-r from-sky-600 to-indigo-700 text-white text-center">
-        <div className="max-w-4xl mx-auto px-4 space-y-6">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Ready to start watching a route?
-          </h2>
-          <p className="text-sky-100 text-lg max-w-xl mx-auto">
-            Create a free watch and get an email when a live fare meets your target.
-          </p>
-          <div className="pt-2">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-sky-700 font-bold text-base shadow-xl hover:bg-sky-50 transition-all hover:scale-105 active:scale-95"
+      <section className="border-t border-line">
+        <div className="mx-auto grid max-w-6xl px-4 sm:px-6 md:grid-cols-3">
+          {BENEFITS.map((b, i) => (
+            <div
+              key={b.title}
+              className={`py-10 md:py-14 ${i > 0 ? 'border-t border-line md:border-t-0 md:border-l md:pl-8' : ''} ${
+                i < BENEFITS.length - 1 ? 'md:pr-8' : ''
+              }`}
             >
-              <span>Get Started Free</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
+              <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fg">{b.title}</h2>
+              <p className="mt-2 max-w-[38ch] text-sm leading-relaxed text-muted">{b.body}</p>
+            </div>
+          ))}
         </div>
       </section>
     </div>

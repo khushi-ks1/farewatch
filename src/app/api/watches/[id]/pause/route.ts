@@ -37,12 +37,12 @@ export async function GET(
   <meta name="robots" content="noindex">
   <title>Pause watch · FareWatch</title>
 </head>
-<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#0f172a;">
-  <form method="POST" action="${escapeHtml(action)}" style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px;max-width:360px;margin:16px;text-align:center;">
-    <h1 style="font-size:20px;margin:0 0 8px;">Pause this flight watch?</h1>
-    <p style="font-size:14px;color:#64748b;margin:0 0 24px;">You'll stop getting price alerts for it. You can turn it back on from your dashboard any time.</p>
+<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#fafaf9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#111112;">
+  <form method="POST" action="${escapeHtml(action)}" style="background:#fff;border:1px solid #e6e5e2;border-radius:10px;padding:28px;max-width:360px;margin:16px;text-align:left;">
+    <h1 style="font-size:20px;font-weight:600;letter-spacing:-0.02em;margin:0 0 6px;">Pause this flight watch?</h1>
+    <p style="font-size:14px;color:#66666c;line-height:1.5;margin:0 0 20px;">You'll stop getting price alerts for it. You can turn it back on from your dashboard any time.</p>
     <input type="hidden" name="token" value="${escapeHtml(token as string)}">
-    <button type="submit" style="width:100%;padding:12px;border:0;border-radius:12px;background:#0284c7;color:#fff;font-size:15px;font-weight:600;cursor:pointer;">Pause watch</button>
+    <button type="submit" style="width:100%;height:40px;border:0;border-radius:6px;background:#111112;color:#fafaf9;font-size:14px;font-weight:500;cursor:pointer;">Pause watch</button>
   </form>
 </body>
 </html>`
