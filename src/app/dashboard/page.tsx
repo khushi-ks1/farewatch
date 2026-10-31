@@ -12,12 +12,10 @@ import {
   Play,
   Pause,
   Trash2,
-  TrendingDown,
   Clock,
   Sparkles,
   ArrowRight,
   RefreshCw,
-  AlertCircle,
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -26,6 +24,7 @@ export default function DashboardPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [checkingPrices, setCheckingPrices] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [now, setNow] = useState(() => Date.now())
 
   const loadWatches = async () => {
     try {
@@ -33,6 +32,7 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json()
         setWatches(data.watches || [])
+        setNow(Date.now())
       }
     } catch (err) {
       console.error('Failed to load watches', err)
@@ -42,6 +42,7 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount; state is set after the request resolves
     loadWatches()
   }, [])
 
@@ -110,11 +111,10 @@ export default function DashboardPage() {
   }
 
   const activeWatches = watches.filter((w) => w.is_active)
-  const pausedWatches = watches.filter((w) => !w.is_active)
 
   const formatLastChecked = (isoString?: string | null) => {
     if (!isoString) return 'Not checked yet'
-    const diffMs = Date.now() - new Date(isoString).getTime()
+    const diffMs = now - new Date(isoString).getTime()
     const diffMins = Math.floor(diffMs / 60000)
     if (diffMins < 1) return 'Just now'
     if (diffMins === 1) return '1 min ago'

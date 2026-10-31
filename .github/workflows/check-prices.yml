@@ -28,3 +28,10 @@ jobs:
             echo "Cron price check failed with status $HTTP_STATUS"
             exit 1
           fi
+
+          # The endpoint returns 200 even if some watches failed; fail the run so it shows up red
+          if [ "$(echo "$BODY" | jq -r '.success')" != "true" ]; then
+            echo "Price check finished with errors:"
+            echo "$BODY" | jq -r '.summary.errors[]?'
+            exit 1
+          fi

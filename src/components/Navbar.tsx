@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from './ThemeProvider'
-import { Plane, Moon, Sun, Plus, ShieldCheck, LogOut, User } from 'lucide-react'
+import { Plane, Moon, Sun, Plus, ShieldCheck, LogOut } from 'lucide-react'
 
 export function Navbar() {
   const pathname = usePathname()

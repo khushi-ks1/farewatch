@@ -1,7 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { Watch, FlightResult } from '@/lib/types'
+import { Watch } from '@/lib/types'
 import { getFlightsForRoute } from '@/lib/flights/search-manager'
 import { sendPriceAlertEmail, EmailAlertFlightPayload } from '@/lib/email/mailer'
+import { MAX_RANGE_DAYS } from '@/lib/watch-validation'
 
 export interface CronCheckSummary {
   watchesChecked: number
@@ -12,13 +13,13 @@ export interface CronCheckSummary {
 }
 
 // Generate date strings between startDate and endDate (inclusive)
-function getDatesInRange(startStr: string, endStr?: string | null): string[] {
+export function getDatesInRange(startStr: string, endStr?: string | null): string[] {
   const dates: string[] = []
   const start = new Date(startStr)
   const end = endStr ? new Date(endStr) : new Date(startStr)
 
   // Cap range at maximum 30 days to avoid runaway searches
-  const maxDays = 30
+  const maxDays = MAX_RANGE_DAYS
   let count = 0
 
   const current = new Date(start)

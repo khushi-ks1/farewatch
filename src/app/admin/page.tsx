@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic'
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  ShieldCheck,
   Users,
   Plane,
   Search,
@@ -29,7 +28,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [unauthorized, setUnauthorized] = useState(false)
   const [runningJob, setRunningJob] = useState(false)
-  const [jobResult, setJobResult] = useState<any>(null)
+  const [jobResult, setJobResult] = useState<Record<string, unknown> | null>(null)
 
   const loadStats = async () => {
     try {
@@ -49,6 +48,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount; state is set after the request resolves
     loadStats()
   }, [])
 
