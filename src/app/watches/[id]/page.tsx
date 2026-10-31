@@ -20,14 +20,12 @@ import {
 import {
   ArrowLeft,
   Plane,
-  Clock,
   Sparkles,
   ExternalLink,
   Pause,
   Play,
   Trash2,
   Calendar,
-  AlertCircle,
   TrendingDown,
 } from 'lucide-react'
 
@@ -61,7 +59,9 @@ export default function WatchDetailPage({
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount; state is set after the request resolves
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the watch id changes
   }, [id])
 
   const handleTogglePause = async () => {
@@ -122,7 +122,7 @@ export default function WatchDetailPage({
   }
 
   // Prepare chart data
-  const chartData = snapshots.map((s, idx) => {
+  const chartData = snapshots.map((s) => {
     const timeLabel = new Intl.DateTimeFormat('en-IN', {
       timeZone: 'Asia/Kolkata',
       month: 'short',
@@ -285,7 +285,7 @@ export default function WatchDetailPage({
                       color: '#ffffff',
                       fontSize: '12px',
                     }}
-                    formatter={(val: any) => [formatINR(Number(val)), 'Price']}
+                    formatter={(val: unknown) => [formatINR(Number(val)), 'Price']}
                   />
                   <ReferenceLine
                     y={Number(watch.target_price)}

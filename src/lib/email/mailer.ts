@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { FlightResult, Watch } from '@/lib/types'
 import { formatINR } from '@/lib/utils'
+import { createPauseToken } from '@/lib/pause-token'
 
 const DAILY_GMAIL_CAP = 400
 
@@ -83,7 +84,10 @@ export async function sendPriceAlertEmail(
 
   const transporter = createTransport()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://farewatch-gules.vercel.app'
-  const pauseUrl = `${appUrl}/api/watches/${watch.id}/pause`
+  const pauseToken = createPauseToken(watch.id)
+  const pauseUrl = pauseToken
+    ? `${appUrl}/api/watches/${watch.id}/pause?token=${pauseToken}`
+    : `${appUrl}/dashboard`
 
   const routeTitle = `${watch.origin_code} (${watch.origin_city}) → ${watch.destination_code} (${watch.destination_city})`
   const cheapestPrice = matchingFlights[0].flight.price
@@ -167,8 +171,9 @@ export async function sendPriceAlertEmail(
   `
 
   if (!transporter) {
-    console.log(`[Mailer Mock] Gmail credentials not set. Simulated sending alert email to ${recipientEmail} with ${matchingFlights.length} deals.`)
-    return { success: true, skippedReason: 'Simulated send (no Gmail credentials in env)' }
+    // Not a success: nothing was delivered, so the alert must not be recorded as sent
+    console.warn(`[Mailer] Gmail credentials not set. Alert email to ${recipientEmail} with ${matchingFlights.length} deals was NOT sent.`)
+    return { success: false, skippedReason: 'Not sent: no Gmail credentials in env' }
   }
 
   try {

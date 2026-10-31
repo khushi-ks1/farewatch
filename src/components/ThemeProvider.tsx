@@ -20,6 +20,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('farewatch_theme') as Theme | null
     if (saved) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount (avoids a hydration mismatch)
       setTheme(saved)
       document.documentElement.classList.toggle('dark', saved === 'dark')
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {

@@ -22,7 +22,8 @@ export async function POST() {
   try {
     const summary = await runPriceCheckJob(createAdminClient())
     return NextResponse.json({
-      success: true,
+      // false when any watch failed, so the scheduler can flag partial failures
+      success: summary.errors.length === 0,
       timestamp: new Date().toISOString(),
       summary,
     })

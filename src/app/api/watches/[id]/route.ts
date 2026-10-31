@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { validateWatchPatch } from '@/lib/watch-validation'
 
 export async function GET(
   request: NextRequest,
@@ -26,7 +27,7 @@ export async function GET(
   }
 
   // Fetch price snapshots history for this watch
-  const { data: snapshots, error: snapError } = await supabase
+  const { data: snapshots } = await supabase
     .from('price_snapshots')
     .select('*')
     .eq('watch_id', id)
@@ -50,19 +51,32 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  let body: unknown
   try {
-    const body = await request.json()
-    const allowedFields = ['is_active', 'target_price', 'target_price_upper', 'rule_type']
-    const updates: Record<string, unknown> = {}
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const { data: current, error: currentError } = await supabase
+    .from('watches')
+    .select('is_active, rule_type, target_price, target_price_upper')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
 
-    for (const key of allowedFields) {
-      if (key in body) {
-        updates[key] = body[key]
-      }
-    }
+  if (currentError || !current) {
+    return NextResponse.json({ error: 'Watch not found' }, { status: 404 })
+  }
 
-    // If activating, check 5 active limit
-    if (updates.is_active === true) {
+  const result = validateWatchPatch(body, current)
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 400 })
+  }
+  const updates = result.updates
+
+  try {
+    // If activating a paused watch, check 5 active limit
+    if (updates.is_active === true && !current.is_active) {
       const { count } = await supabase
         .from('watches')
         .select('*', { count: 'exact', head: true })

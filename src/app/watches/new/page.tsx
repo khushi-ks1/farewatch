@@ -4,8 +4,9 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { AirportSelect } from '@/components/AirportSelect'
+import { maxRangeEnd } from '@/lib/watch-validation'
 import { Airport, INDIAN_AIRPORTS } from '@/lib/airports'
-import { Plane, ArrowLeft, Calendar, ShieldAlert, CheckCircle2, SlidersHorizontal } from 'lucide-react'
+import { Plane, ArrowLeft, ShieldAlert, CheckCircle2, SlidersHorizontal } from 'lucide-react'
 
 export default function NewWatchPage() {
   const router = useRouter()
@@ -14,8 +15,8 @@ export default function NewWatchPage() {
 
   // Date selection
   const [isRange, setIsRange] = useState(false)
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
-  const nextWeek = new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0]
+  const [tomorrow] = useState(() => new Date(Date.now() + 86400000).toISOString().split('T')[0])
+  const [nextWeek] = useState(() => new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0])
   const [startDate, setStartDate] = useState(tomorrow)
   const [endDate, setEndDate] = useState(nextWeek)
 
@@ -200,6 +201,7 @@ export default function NewWatchPage() {
                     type="date"
                     required
                     min={startDate || tomorrow}
+                    max={maxRangeEnd(startDate || tomorrow)}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"

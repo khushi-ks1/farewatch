@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAirportByCode } from '@/lib/airports'
 import { getFlightsForRoute } from '@/lib/flights/search-manager'
+import { validateDateRange } from '@/lib/watch-validation'
 
 const MAX_ACTIVE_WATCHES = 5
 
@@ -69,8 +70,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Travel date cannot be in the past' }, { status: 400 })
     }
 
-    if (departure_date_end && departure_date_end < departure_date_start) {
-      return NextResponse.json({ error: 'End date must be after start date' }, { status: 400 })
+    const rangeError = validateDateRange(departure_date_start, departure_date_end)
+    if (rangeError) {
+      return NextResponse.json({ error: rangeError }, { status: 400 })
     }
 
     if (rule_type === 'BETWEEN' && (!target_price_upper || target_price_upper <= target_price)) {
