@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { AirportSelect } from '@/components/AirportSelect'
 import { maxRangeEnd } from '@/lib/watch-validation'
 import { Airport, INDIAN_AIRPORTS } from '@/lib/airports'
-import { Plane, ArrowLeft, ShieldAlert, CheckCircle2, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, ArrowLeftRight } from 'lucide-react'
+import { Notice, Segmented, Spinner, buttonClass, hintClass, inputClass, labelClass } from '@/components/ui'
 
 export default function NewWatchPage() {
   const router = useRouter()
@@ -98,250 +99,179 @@ export default function NewWatchPage() {
     }
   }
 
+  const swapRoute = () => {
+    setOrigin(destination)
+    setDestination(origin)
+  }
+
+  const priceInput = (id: string, value: string, onChange: (v: string) => void, placeholder: string) => (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-faint">₹</span>
+      <input
+        id={id}
+        type="number"
+        inputMode="numeric"
+        step="50"
+        min="500"
+        required
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`${inputClass} pl-7 tabular-nums`}
+      />
+    </div>
+  )
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 md:py-12">
-      {/* Back button */}
+    <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6 md:py-14">
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-fg"
       >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back to Dashboard</span>
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Watches
       </Link>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-10 shadow-sm">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-600/30">
-            <Plane className="w-6 h-6 -rotate-45" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Create Flight Watch
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Set route & target fare &bull; We will check prices automatically
-            </p>
-            <p className="mt-2 max-w-lg text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-              Checks run on a schedule. Simulated preview prices are clearly labeled and never sent as deal alerts.
-            </p>
-          </div>
-        </div>
+      <h1 className="mt-5 text-[28px] font-semibold tracking-[-0.035em] text-fg">New watch</h1>
+      <p className="mt-1 max-w-[52ch] text-sm leading-relaxed text-muted">
+        Tell us where you’re going and what you want to pay. We check fares every 30 minutes and email you when one fits.
+      </p>
 
-        {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300 text-sm flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" />
-            <span>{error}</span>
-          </div>
-        )}
+      {error && (
+        <Notice tone="error" className="mt-6">
+          {error}
+        </Notice>
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Route Section */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            <AirportSelect
-              label="From (Origin)"
-              value={origin.code}
-              onChange={setOrigin}
-              excludeCode={destination.code}
+      <form onSubmit={handleSubmit} className="mt-8 divide-y divide-line rounded-lg border border-line bg-surface">
+        {/* Route */}
+        <fieldset className="min-w-0 p-5 sm:p-6">
+          <legend className="sr-only">Route</legend>
+          <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+            <AirportSelect label="From" value={origin.code} onChange={setOrigin} excludeCode={destination.code} />
+            <button
+              type="button"
+              onClick={swapRoute}
+              aria-label="Swap origin and destination"
+              title="Swap"
+              className="hidden h-12 w-9 items-center justify-center rounded-md text-faint transition-colors hover:bg-subtle hover:text-fg sm:inline-flex"
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+            </button>
+            <AirportSelect label="To" value={destination.code} onChange={setDestination} excludeCode={origin.code} />
+          </div>
+        </fieldset>
+
+        {/* Dates */}
+        <fieldset aria-labelledby="when-heading" className="min-w-0 p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="when-heading" className="text-[15px] font-semibold text-fg">When</h2>
+            <Segmented
+              label="Date mode"
+              value={isRange ? 'range' : 'single'}
+              onChange={(v) => setIsRange(v === 'range')}
+              options={[
+                { value: 'single', label: 'One date' },
+                { value: 'range', label: 'Date range' },
+              ]}
             />
-
-            <AirportSelect
-              label="To (Destination)"
-              value={destination.code}
-              onChange={setDestination}
-              excludeCode={origin.code}
-            />
           </div>
 
-          {/* Date Mode Toggle */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Travel Date
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="start-date" className={labelClass}>
+                {isRange ? 'Earliest departure' : 'Departure'}
               </label>
-              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs">
-                <button
-                  type="button"
-                  onClick={() => setIsRange(false)}
-                  className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
-                    !isRange ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-white shadow-xs' : 'text-slate-500'
-                  }`}
-                >
-                  Single Date
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsRange(true)}
-                  className={`px-2.5 py-1 rounded-md font-semibold transition-colors ${
-                    isRange ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-white shadow-xs' : 'text-slate-500'
-                  }`}
-                >
-                  Date Range
-                </button>
-              </div>
+              <input
+                id="start-date"
+                type="date"
+                required
+                min={tomorrow}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className={`${inputClass} tabular-nums`}
+              />
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
+            {isRange && (
               <div>
-                <span className="block text-[11px] text-slate-400 mb-1">
-                  {isRange ? 'Earliest Departure' : 'Departure Date'}
-                </span>
+                <label htmlFor="end-date" className={labelClass}>
+                  Latest departure
+                </label>
                 <input
+                  id="end-date"
                   type="date"
                   required
-                  min={tomorrow}
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  min={startDate || tomorrow}
+                  max={maxRangeEnd(startDate || tomorrow)}
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className={`${inputClass} tabular-nums`}
                 />
-              </div>
-
-              {isRange && (
-                <div>
-                  <span className="block text-[11px] text-slate-400 mb-1">
-                    Latest Departure
-                  </span>
-                  <input
-                    type="date"
-                    required
-                    min={startDate || tomorrow}
-                    max={maxRangeEnd(startDate || tomorrow)}
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Price Rule Section */}
-          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-sky-600" />
-                Price Target Rule
-              </span>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRuleType('BELOW')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${
-                    ruleType === 'BELOW'
-                      ? 'bg-sky-600 text-white'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  Below ₹X
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRuleType('BETWEEN')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${
-                    ruleType === 'BETWEEN'
-                      ? 'bg-sky-600 text-white'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  Between ₹X and ₹Y
-                </button>
-              </div>
-            </div>
-
-            {ruleType === 'BELOW' ? (
-              <div>
-                <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  Alert me when flight price is below:
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
-                  <input
-                    type="number"
-                    step="50"
-                    min="500"
-                    required
-                    value={targetPrice}
-                    onChange={(e) => setTargetPrice(e.target.value)}
-                    placeholder="4000"
-                    className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-base focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                    Minimum Price (₹)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
-                    <input
-                      type="number"
-                      step="50"
-                      min="500"
-                      required
-                      value={targetPrice}
-                      onChange={(e) => setTargetPrice(e.target.value)}
-                      placeholder="3000"
-                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-base focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                    Maximum Price (₹)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">₹</span>
-                    <input
-                      type="number"
-                      step="50"
-                      min="500"
-                      required
-                      value={targetPriceUpper}
-                      onChange={(e) => setTargetPriceUpper(e.target.value)}
-                      placeholder="5500"
-                      className="w-full pl-8 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-base focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    />
-                  </div>
-                </div>
               </div>
             )}
+          </div>
+          {isRange && <p className={`${hintClass} mt-3`}>We check every day in the range, up to 30 days.</p>}
+        </fieldset>
 
-            {/* Non-stop only preference */}
-            <div className="pt-2">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={nonStopOnly}
-                  onChange={(e) => setNonStopOnly(e.target.checked)}
-                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700"
-                />
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Non-stop flights only (exclude connecting flights)
-                </span>
+        {/* Price rule */}
+        <fieldset aria-labelledby="price-heading" className="min-w-0 p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="price-heading" className="text-[15px] font-semibold text-fg">Alert me when the fare is</h2>
+            <Segmented
+              label="Price rule"
+              value={ruleType}
+              onChange={setRuleType}
+              options={[
+                { value: 'BELOW', label: 'Under a price' },
+                { value: 'BETWEEN', label: 'In a range' },
+              ]}
+            />
+          </div>
+
+          {ruleType === 'BELOW' ? (
+            <div className="mt-4 sm:max-w-[calc(50%-0.5rem)]">
+              <label htmlFor="target-price" className={labelClass}>
+                Under
               </label>
+              {priceInput('target-price', targetPrice, setTargetPrice, '4000')}
             </div>
-          </div>
+          ) : (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="target-price" className={labelClass}>
+                  From
+                </label>
+                {priceInput('target-price', targetPrice, setTargetPrice, '3000')}
+              </div>
+              <div>
+                <label htmlFor="target-price-upper" className={labelClass}>
+                  To
+                </label>
+                {priceInput('target-price-upper', targetPriceUpper, setTargetPriceUpper, '5500')}
+              </div>
+            </div>
+          )}
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 px-6 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-base shadow-lg shadow-sky-600/25 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
-          >
-            {loading ? (
-              <span>Creating & Checking initial fares...</span>
-            ) : (
-              <>
-                <CheckCircle2 className="w-5 h-5" />
-                <span>Save Watch & Start Monitoring</span>
-              </>
-            )}
+          <label className="mt-5 flex cursor-pointer items-center gap-2.5">
+            <input
+              type="checkbox"
+              checked={nonStopOnly}
+              onChange={(e) => setNonStopOnly(e.target.checked)}
+              className="h-4 w-4 rounded border-line-strong accent-[var(--accent)]"
+            />
+            <span className="text-sm text-fg">Non-stop flights only</span>
+          </label>
+        </fieldset>
+
+        <div className="flex flex-col-reverse gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <p className={hintClass}>Sample fares are labelled and never sent as alerts.</p>
+          <button type="submit" disabled={loading} className={buttonClass('primary', 'md', 'h-10 px-5')}>
+            {loading && <Spinner className="border-bg/30 border-t-bg" />}
+            {loading ? 'Saving and checking fares' : 'Save watch'}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   )
 }

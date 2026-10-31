@@ -4,16 +4,9 @@ export const dynamic = 'force-dynamic'
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import {
-  Users,
-  Plane,
-  Search,
-  Mail,
-  RefreshCw,
-  AlertTriangle,
-  ArrowLeft,
-  CheckCircle2,
-} from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { LoadingState, Notice, buttonClass } from '@/components/ui'
+import { cn } from '@/lib/utils'
 
 interface AdminStats {
   totalUsers: number
@@ -69,161 +62,95 @@ export default function AdminPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="py-24 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-600 border-t-transparent mb-3" />
-        <p className="text-sm text-slate-500">Checking admin authorization...</p>
-      </div>
-    )
+  if (loading && !stats) {
+    return <LoadingState label="Checking admin access" />
   }
 
   if (unauthorized) {
     return (
-      <div className="max-w-md mx-auto py-24 px-4 text-center">
-        <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 mx-auto mb-4">
-          <AlertTriangle className="w-6 h-6" />
-        </div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-          Admin Access Required
-        </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          Your signed-in email is not listed in <code>ADMIN_EMAILS</code>. Only administrators can view application stats and quotas.
+      <div className="mx-auto max-w-md px-4 py-24 text-center">
+        <h1 className="text-[15px] font-semibold text-fg">Admin access required</h1>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted">
+          Your signed-in email isn’t listed in <code className="font-mono text-[13px] text-fg">ADMIN_EMAILS</code>. Only
+          administrators can view usage and quotas.
         </p>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Return to Dashboard</span>
+        <Link href="/dashboard" className={buttonClass('secondary', 'md', 'mt-6')}>
+          Back to watches
         </Link>
       </div>
     )
   }
 
+  const metrics: { label: string; value: number; limit?: number; limitLabel?: string; secondary?: string }[] = [
+    { label: 'Users', value: stats?.totalUsers ?? 0 },
+    { label: 'Active watches', value: stats?.activeWatches ?? 0, secondary: `of ${stats?.totalWatches ?? 0} total` },
+    { label: 'SerpApi searches this month', value: stats?.apiSearchesMonth ?? 0, limit: 250, limitLabel: 'free quota' },
+    { label: 'Emails sent today', value: stats?.emailsSentToday ?? 0, limit: 400, limitLabel: 'daily cap' },
+  ]
+
+  const jobFailed = Boolean(jobResult && 'error' in jobResult)
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 w-full space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 md:py-14">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 font-bold text-xs">
-              System Admin
-            </span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mt-1">
-            FareWatch Overview
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Real-time multi-user metrics, SerpApi free budget tracking, and mailer capacity
-          </p>
+          <h1 className="text-[28px] font-semibold tracking-[-0.035em] text-fg">Admin</h1>
+          <p className="mt-1 text-sm text-muted">Usage across all users, search quota and email capacity.</p>
         </div>
 
-        <button
-          onClick={handleRunPriceCheck}
-          disabled={runningJob}
-          className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm shadow-md shadow-purple-600/25 flex items-center gap-2 transition-all disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${runningJob ? 'animate-spin' : ''}`} />
-          <span>{runningJob ? 'Running Job...' : 'Trigger Price Check'}</span>
+        <button onClick={handleRunPriceCheck} disabled={runningJob} className={buttonClass('primary', 'md')}>
+          <RefreshCw className={cn('h-3.5 w-3.5', runningJob && 'animate-spin')} />
+          {runningJob ? 'Running price check' : 'Run price check now'}
         </button>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Users */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-sky-600">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Total Users
+      <dl className="mt-8 grid overflow-hidden rounded-lg border border-line bg-surface sm:grid-cols-2 lg:grid-cols-4">
+        {metrics.map((m, i) => {
+          const pct = m.limit ? Math.min(100, (m.value / m.limit) * 100) : 0
+          return (
+            <div
+              key={m.label}
+              className={cn(
+                'px-5 py-5',
+                i > 0 && 'border-t border-line sm:border-t-0',
+                i % 2 === 1 && 'sm:border-l',
+                i >= 2 && 'sm:border-t lg:border-t-0',
+                i === 2 && 'lg:border-l'
+              )}
+            >
+              <dt className="text-[13px] text-muted">{m.label}</dt>
+              <dd className="mt-1.5">
+                <span className="text-[28px] font-semibold tracking-[-0.03em] tabular-nums text-fg">{m.value}</span>
+                {m.limit ? (
+                  <span className="ml-1.5 text-[13px] tabular-nums text-faint">
+                    / {m.limit} {m.limitLabel}
+                  </span>
+                ) : (
+                  m.secondary && <span className="ml-1.5 text-[13px] tabular-nums text-faint">{m.secondary}</span>
+                )}
+              </dd>
+              {m.limit && (
+                <div className="mt-3 h-1 overflow-hidden rounded-full bg-subtle" aria-hidden>
+                  <div
+                    className={cn('h-full rounded-full transition-[width] duration-500', pct >= 85 ? 'bg-warn' : 'bg-accent')}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              )}
             </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-              {stats?.totalUsers ?? 0}
-            </div>
-          </div>
-        </div>
+          )
+        })}
+      </dl>
 
-        {/* Watches */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-indigo-600">
-            <Plane className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Active Watches
-            </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-              {stats?.activeWatches ?? 0}
-              <span className="text-xs font-normal text-slate-400 ml-1.5">
-                / {stats?.totalWatches ?? 0} total
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* SerpApi Usage */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-600">
-            <Search className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              SerpApi Searches (Month)
-            </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-              {stats?.apiSearchesMonth ?? 0}
-              <span className="text-xs font-normal text-slate-400 ml-1.5">/ 250 free quota</span>
-            </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-              <div
-                className="bg-amber-500 h-full rounded-full transition-all"
-                style={{
-                  width: `${Math.min(100, ((stats?.apiSearchesMonth || 0) / 250) * 100)}%`,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Emails Sent Today */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600">
-            <Mail className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Emails Sent Today
-            </div>
-            <div className="text-3xl font-black text-slate-900 dark:text-white mt-1">
-              {stats?.emailsSentToday ?? 0}
-              <span className="text-xs font-normal text-slate-400 ml-1.5">/ 400 daily cap</span>
-            </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-              <div
-                className="bg-emerald-500 h-full rounded-full transition-all"
-                style={{
-                  width: `${Math.min(100, ((stats?.emailsSentToday || 0) / 400) * 100)}%`,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Manual Job Execution Result Banner */}
       {jobResult && (
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-            <span>Price Check Run Results</span>
-          </div>
-          <pre className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 font-mono text-xs text-slate-800 dark:text-slate-200 overflow-x-auto">
+        <section className="mt-8">
+          <Notice tone={jobFailed ? 'error' : 'success'}>
+            {jobFailed ? 'The price check failed. Details are below.' : 'Price check finished. Results are below.'}
+          </Notice>
+          <pre className="mt-3 overflow-x-auto rounded-lg border border-line bg-surface p-4 font-mono text-xs leading-relaxed text-fg">
             {JSON.stringify(jobResult, null, 2)}
           </pre>
-        </div>
+        </section>
       )}
     </div>
   )
